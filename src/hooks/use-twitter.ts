@@ -10,15 +10,17 @@ export const useTwitterTimeline = () => {
     queryKey: ["twitter-timeline"],
     queryFn: async (): Promise<Tweet[]> => {
       try {
-        const response = await fetch(
-          "https://twitter-api45.p.rapidapi.com/replies.php",
-          {
-            method: 'GET',
-            headers: {
-              'x-rapidapi-key': RAPID_API_KEY,
-              'x-rapidapi-host': RAPID_API_HOST,
-            },
+        const options = {
+          method: 'GET',
+          headers: {
+            'x-rapidapi-key': RAPID_API_KEY,
+            'x-rapidapi-host': RAPID_API_HOST
           }
+        };
+
+        const response = await fetch(
+          `https://${RAPID_API_HOST}/replies.php`,
+          options
         );
 
         if (!response.ok) {
@@ -40,5 +42,7 @@ export const useTwitterTimeline = () => {
         throw error;
       }
     },
+    retry: 1,
+    refetchOnWindowFocus: false
   });
 };
