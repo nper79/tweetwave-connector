@@ -1,15 +1,24 @@
 export interface TwitterResponse {
-  data: Tweet[];
-  meta: {
-    result_count: number;
-    next_token?: string;
-  };
+  timeline?: Tweet[];
 }
 
 export interface Tweet {
-  id: string;
+  tweet_id: string;
   text: string;
   created_at: string;
-  author_id: string;
-  // Add more fields as needed
+  favorites: number;
+  retweets: number;
+  replies: number;
+  views: string;
+  author: {
+    name: string;
+    screen_name: string;
+    avatar: string;
+  };
+  media?: {
+    photo?: {
+      media_url_https: string;
+      id: string;
+    }[];
+  };
 }
