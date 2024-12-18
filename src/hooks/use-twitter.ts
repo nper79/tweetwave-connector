@@ -11,11 +11,12 @@ export const useTwitterTimeline = () => {
     queryFn: async (): Promise<Tweet[]> => {
       try {
         const response = await fetch(
-          "https://twitter-api45.p.rapidapi.com/timeline.php?screenname=SolbergInvest",
+          "https://twitter-api45.p.rapidapi.com/replies.php",
           {
+            method: 'GET',
             headers: {
-              "x-rapidapi-key": RAPID_API_KEY,
-              "x-rapidapi-host": RAPID_API_HOST,
+              'x-rapidapi-key': RAPID_API_KEY,
+              'x-rapidapi-host': RAPID_API_HOST,
             },
           }
         );
