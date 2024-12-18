@@ -1,5 +1,5 @@
 export interface TwitterResponse {
-  timeline?: Tweet[];
+  timeline: Tweet[];
 }
 
 export interface Tweet {

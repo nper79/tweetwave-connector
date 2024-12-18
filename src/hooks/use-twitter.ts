@@ -24,15 +24,15 @@ export const useTwitterTimeline = () => {
           throw new Error("Failed to fetch tweets");
         }
 
-        const data = await response.json();
+        const data: TwitterResponse = await response.json();
         console.log("Raw API response:", data);
 
-        if (!Array.isArray(data)) {
+        if (!data.timeline || !Array.isArray(data.timeline)) {
           console.error("Unexpected API response format:", data);
           return [];
         }
 
-        return data;
+        return data.timeline;
       } catch (error) {
         console.error("Twitter API Error:", error);
         toast.error("Failed to fetch tweets");
