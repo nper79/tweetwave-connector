@@ -6,6 +6,8 @@ import { CalendarDays } from "lucide-react";
 export const TwitterTimeline = () => {
   const { data, isLoading, error } = useTwitterTimeline();
 
+  console.log("Twitter API Response:", data); // Add logging to debug the response structure
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -27,9 +29,20 @@ export const TwitterTimeline = () => {
     );
   }
 
+  // Check if data exists and has the expected structure
+  const tweets = data?.data || [];
+
+  if (tweets.length === 0) {
+    return (
+      <div className="text-center p-4">
+        <p className="text-gray-500">No tweets found</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      {data?.data.map((tweet: Tweet) => (
+      {tweets.map((tweet: Tweet) => (
         <div
           key={tweet.id}
           className="p-4 border rounded-lg hover:border-blue-400 transition-colors bg-white shadow-sm"
