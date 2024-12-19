@@ -3,7 +3,7 @@ export const calculateROI = (entryPrice: number, currentPrice: number): number =
 };
 
 export const formatCryptoSymbol = (code: string): string => {
-  return `${code.toUpperCase()}USD`;
+  return `${code.toUpperCase()}USDT`;
 };
 
 export const API_CONFIG = {
