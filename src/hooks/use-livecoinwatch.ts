@@ -3,7 +3,7 @@ import { toast } from "sonner";
 
 interface PriceHistoryParams {
   currency?: string;
-  symbol: string;
+  coin: string;
   start: number;
   end: number;
 }
@@ -15,9 +15,9 @@ interface PriceHistoryResponse {
   }[];
 }
 
-export const usePriceHistory = ({ currency = "USD", symbol, start, end }: PriceHistoryParams) => {
+export const usePriceHistory = ({ currency = "USD", coin, start, end }: PriceHistoryParams) => {
   return useQuery({
-    queryKey: ["price-history", symbol, start, end],
+    queryKey: ["price-history", coin, start, end],
     queryFn: async (): Promise<PriceHistoryResponse> => {
       try {
         const response = await fetch("https://api.livecoinwatch.com/coins/single/history", {
@@ -28,14 +28,16 @@ export const usePriceHistory = ({ currency = "USD", symbol, start, end }: PriceH
           },
           body: JSON.stringify({
             currency,
-            symbol,
+            coin,
             start,
             end,
           }),
         });
 
         if (!response.ok) {
-          throw new Error("Failed to fetch price history");
+          const errorData = await response.json();
+          console.error("LiveCoinWatch API Error:", errorData);
+          throw new Error(errorData.error?.description || "Failed to fetch price history");
         }
 
         const data = await response.json();

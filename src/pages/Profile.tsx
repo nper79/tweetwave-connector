@@ -48,9 +48,9 @@ const Profile = () => {
   const now = Date.now();
   const oneMonthAgo = now - 30 * 24 * 60 * 60 * 1000;
 
-  // Example of using the hook for Bitcoin price history
+  // Example of using the hook for Bitcoin price history - now using the correct 'coin' parameter
   const { data: btcHistory } = usePriceHistory({
-    symbol: "BTC",
+    coin: "BTC",
     start: oneMonthAgo,
     end: now,
   });
