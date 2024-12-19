@@ -25,6 +25,7 @@ export const usePriceHistory = ({ currency = "USD", start, end }: PriceHistoryPa
         const response = await fetch("https://api.livecoinwatch.com/overview/history", {
           method: "POST",
           headers: {
+            "accept": "application/json",
             "content-type": "application/json",
             "x-api-key": "a91bacc5-9ae1-4ea5-8f11-b764775a2671",
           },
@@ -37,8 +38,8 @@ export const usePriceHistory = ({ currency = "USD", start, end }: PriceHistoryPa
 
         if (!response.ok) {
           const errorData = await response.json();
-          console.error("LiveCoinWatch API Error:", errorData);
-          throw new Error(errorData.error?.description || "Failed to fetch price history");
+          console.error("LiveCoinWatch API Error Response:", errorData);
+          throw new Error(errorData.error || "Failed to fetch price history");
         }
 
         const data = await response.json();
@@ -46,7 +47,7 @@ export const usePriceHistory = ({ currency = "USD", start, end }: PriceHistoryPa
         return data;
       } catch (error) {
         console.error("LiveCoinWatch API Error:", error);
-        toast.error("Failed to fetch price history");
+        toast.error("Failed to fetch market data. Please try again later.");
         throw error;
       }
     },
