@@ -46,8 +46,8 @@ export const usePriceHistory = ({ code = "BTC", currency = "USD", start, end, me
     queryKey: ["price-history", code, currency, start, end],
     queryFn: async (): Promise<CoinHistoryResponse> => {
       try {
-        // Format the symbol as LTCBTC format (assuming BTC as base)
-        const symbol = `${code.toUpperCase()}BTC`;
+        // Format the symbol as XXXUSD format
+        const symbol = `${code.toUpperCase()}USD`;
         console.log("Fetching price for symbol:", symbol);
 
         const response = await fetch(
