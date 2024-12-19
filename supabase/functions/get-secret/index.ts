@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,13 +12,6 @@ serve(async (req) => {
   }
 
   try {
-    // Create Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    // Get request body
     const { name } = await req.json()
     
     if (!name) {
@@ -34,15 +26,15 @@ serve(async (req) => {
 
     console.log(`Fetching secret: ${name}`)
     
-    const { data: secret, error: secretError } = await supabaseClient
-      .rpc('get_secret_value', { secret_name: name })
-
-    if (secretError) {
-      console.error('Error fetching secret:', secretError)
+    // Use Deno.env to get the secret directly
+    const secret = Deno.env.get(name)
+    
+    if (!secret) {
+      console.error(`Secret ${name} not found`)
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch secret' }),
+        JSON.stringify({ error: 'Secret not found' }),
         { 
-          status: 500,
+          status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )

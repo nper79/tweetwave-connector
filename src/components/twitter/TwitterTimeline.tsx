@@ -2,7 +2,7 @@ import { Tweet } from "@/types/twitter";
 import { useTwitterTimeline } from "@/hooks/use-twitter";
 import { usePredictions } from "@/hooks/use-predictions";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CalendarDays, MessageCircle, Heart, Repeat2, Eye, Target, ArrowTrendingUp } from "lucide-react";
+import { CalendarDays, MessageCircle, Heart, Repeat2, Eye, Target, TrendingUp } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
