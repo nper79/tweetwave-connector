@@ -2,10 +2,9 @@ import { Tweet } from "@/types/twitter";
 import { useTwitterTimeline } from "@/hooks/use-twitter";
 import { usePredictions } from "@/hooks/use-predictions";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CalendarDays, MessageCircle, Heart, Repeat2, Eye, Target, TrendingUp } from "lucide-react";
+import { CalendarDays, MessageCircle, Heart, Repeat2, Eye, Target } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner";
 
 interface TwitterTimelineProps {
   username?: string;
@@ -15,48 +14,11 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
   const { data: tweets, isLoading, error } = useTwitterTimeline(username);
   const { data: predictions } = usePredictions(tweets);
 
-  const isPredictionTweet = (tweet: Tweet) => {
-    if (!tweet.text) return false;
-    
-    console.log('Analyzing tweet:', tweet.text);
-    
-    // Check for crypto symbols (e.g., $BTC, $ETH)
-    const cryptoSymbolRegex = /\$[A-Z]{2,}/;
-    const hasCryptoSymbol = cryptoSymbolRegex.test(tweet.text);
-    
-    // Check for price values (e.g., $50,000 or 50k)
-    const priceRegex = /\$?\d+(?:,\d{3})*(?:\.\d+)?k?\s*(?:USD)?/i;
-    const hasPrice = priceRegex.test(tweet.text);
-    
-    // Check for prediction keywords
-    const predictionKeywords = [
-      'target', 'prediction', 'predict', 'forecast',
-      'expecting', 'expect', 'projected', 'analysis',
-      'breakout', 'resistance', 'support', 'rally',
-      'bullish', 'bearish', 'long', 'short'
-    ];
-    
-    const hasKeyword = predictionKeywords.some(keyword => 
-      tweet.text?.toLowerCase().includes(keyword)
-    );
-    
-    const isPrediction = hasCryptoSymbol && (hasPrice || hasKeyword);
-    console.log('Tweet analysis:', {
-      text: tweet.text,
-      hasCryptoSymbol,
-      hasPrice,
-      hasKeyword,
-      isPrediction
-    });
-    
-    return isPrediction;
-  };
-
   const renderTweet = (tweet: Tweet) => {
     if (!tweet || !tweet.author) return null;
 
     const hasMedia = tweet.media?.photo && tweet.media.photo[0];
-    const isPrediction = isPredictionTweet(tweet);
+    const isPrediction = predictions?.some(p => p.tweet.tweet_id === tweet.tweet_id);
 
     return (
       <div
@@ -170,7 +132,7 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
     );
   }
 
-  const predictionTweets = tweets.filter(isPredictionTweet);
+  const predictionTweets = predictions?.map(p => p.tweet) || [];
   console.log('Found prediction tweets:', predictionTweets.length);
   
   return (
