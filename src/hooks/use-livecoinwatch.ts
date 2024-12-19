@@ -20,7 +20,7 @@ export const usePriceHistory = ({ currency = "USD", coin, start, end }: PriceHis
     queryKey: ["price-history", coin, start, end],
     queryFn: async (): Promise<PriceHistoryResponse> => {
       try {
-        const response = await fetch("https://api.livecoinwatch.com/coins/single/history", {
+        const response = await fetch("https://api.livecoinwatch.com/overview/history", {
           method: "POST",
           headers: {
             "content-type": "application/json",
@@ -28,9 +28,9 @@ export const usePriceHistory = ({ currency = "USD", coin, start, end }: PriceHis
           },
           body: JSON.stringify({
             currency,
-            coin,
             start,
             end,
+            meta: true,
           }),
         });
 
