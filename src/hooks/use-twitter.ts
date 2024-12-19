@@ -5,9 +5,9 @@ import { toast } from "sonner";
 const RAPID_API_KEY = "d51b9a68c9mshdf25f4ca2622a18p1602edjsn81602d153c16";
 const RAPID_API_HOST = "twitter-api45.p.rapidapi.com";
 
-export const useTwitterTimeline = () => {
+export const useTwitterTimeline = (username: string = "SolbergInvest") => {
   return useQuery({
-    queryKey: ["twitter-timeline"],
+    queryKey: ["twitter-timeline", username],
     queryFn: async (): Promise<Tweet[]> => {
       try {
         const options = {
@@ -19,7 +19,7 @@ export const useTwitterTimeline = () => {
         };
 
         const response = await fetch(
-          `https://${RAPID_API_HOST}/replies.php`,
+          `https://${RAPID_API_HOST}/replies.php?username=${username}`,
           options
         );
 
