@@ -3,7 +3,6 @@ import { toast } from "sonner";
 
 interface PriceHistoryParams {
   currency?: string;
-  coin: string;
   start: number;
   end: number;
 }
@@ -11,13 +10,16 @@ interface PriceHistoryParams {
 interface PriceHistoryResponse {
   history: {
     date: number;
-    rate: number;
+    cap: number;
+    volume: number;
+    liquidity: number;
+    btcDominance: number;
   }[];
 }
 
-export const usePriceHistory = ({ currency = "USD", coin, start, end }: PriceHistoryParams) => {
+export const usePriceHistory = ({ currency = "USD", start, end }: PriceHistoryParams) => {
   return useQuery({
-    queryKey: ["price-history", coin, start, end],
+    queryKey: ["price-history", currency, start, end],
     queryFn: async (): Promise<PriceHistoryResponse> => {
       try {
         const response = await fetch("https://api.livecoinwatch.com/overview/history", {
@@ -30,7 +32,6 @@ export const usePriceHistory = ({ currency = "USD", coin, start, end }: PriceHis
             currency,
             start,
             end,
-            meta: true,
           }),
         });
 
