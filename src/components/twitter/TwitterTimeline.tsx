@@ -12,7 +12,7 @@ interface TwitterTimelineProps {
 
 export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps) => {
   const { data: tweets, isLoading, error } = useTwitterTimeline(username);
-  const { data: predictions } = usePredictions(tweets, "YOUR_API_KEY"); // We'll need to handle this securely
+  const { data: predictions } = usePredictions(tweets);
 
   console.log("Predictions:", predictions);
 

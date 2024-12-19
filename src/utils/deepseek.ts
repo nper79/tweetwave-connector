@@ -1,10 +1,28 @@
 import { Tweet } from "@/types/twitter";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions";
 
-export const analyzeTweetForPrediction = async (tweet: Tweet, apiKey: string): Promise<boolean> => {
+const getDeepSeekApiKey = async () => {
+  const { data, error } = await supabase.functions.invoke('get-secret', {
+    body: { name: 'DEEPSEEK_API_KEY' }
+  });
+  
+  if (error || !data?.secret) {
+    console.error('Failed to get DeepSeek API key:', error);
+    toast.error('Failed to get API key. Please check your configuration.');
+    return null;
+  }
+  
+  return data.secret;
+};
+
+export const analyzeTweetForPrediction = async (tweet: Tweet): Promise<boolean> => {
   try {
+    const apiKey = await getDeepSeekApiKey();
+    if (!apiKey) return false;
+
     console.log("Analyzing tweet with DeepSeek API...");
     
     const response = await fetch(DEEPSEEK_API_URL, {
@@ -35,7 +53,7 @@ export const analyzeTweetForPrediction = async (tweet: Tweet, apiKey: string): P
       console.error("DeepSeek API Error:", errorData);
       
       if (response.status === 401) {
-        toast.error("Authentication failed. Please check your DeepSeek API key.");
+        toast.error("Invalid API key. Please check your DeepSeek API configuration.");
         return false;
       }
       
@@ -43,10 +61,7 @@ export const analyzeTweetForPrediction = async (tweet: Tweet, apiKey: string): P
     }
 
     const data = await response.json();
-    console.log("DeepSeek API Response:", data);
-    
-    const isPrediction = data.choices[0].message.content.toLowerCase().includes("true");
-    return isPrediction;
+    return data.choices[0].message.content.toLowerCase().includes("true");
   } catch (error) {
     console.error("Error analyzing tweet:", error);
     toast.error("Failed to analyze tweet. Please try again later.");
@@ -54,8 +69,11 @@ export const analyzeTweetForPrediction = async (tweet: Tweet, apiKey: string): P
   }
 };
 
-export const extractPredictionDetails = async (tweet: Tweet, apiKey: string) => {
+export const extractPredictionDetails = async (tweet: Tweet) => {
   try {
+    const apiKey = await getDeepSeekApiKey();
+    if (!apiKey) return null;
+
     console.log("Extracting prediction details...");
     
     const response = await fetch(DEEPSEEK_API_URL, {
@@ -94,7 +112,7 @@ export const extractPredictionDetails = async (tweet: Tweet, apiKey: string) => 
       console.error("DeepSeek API Error:", errorData);
       
       if (response.status === 401) {
-        toast.error("Authentication failed. Please check your DeepSeek API key.");
+        toast.error("Invalid API key. Please check your DeepSeek API configuration.");
         return null;
       }
       
@@ -102,7 +120,6 @@ export const extractPredictionDetails = async (tweet: Tweet, apiKey: string) => 
     }
 
     const data = await response.json();
-    console.log("DeepSeek API Response:", data);
     
     try {
       return JSON.parse(data.choices[0].message.content);
