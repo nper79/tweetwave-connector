@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import * as ccxt from 'ccxt';
 
 interface CoinHistory {
   date: number;
@@ -71,30 +72,36 @@ export const usePriceHistory = ({ code = "BTC", currency = "USD", start, end, me
     queryKey: ["price-history", code, currency, start, end],
     queryFn: async (): Promise<CoinHistoryResponse> => {
       try {
-        const response = await fetch("https://api.livecoinwatch.com/coins/single/history", {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            "x-api-key": "a91bacc5-9ae1-4ea5-8f11-b764775a2671",
-          },
-          body: JSON.stringify({
-            code,
-            currency,
-            start,
-            end,
-            meta,
-          }),
-        });
+        // Initialize Binance exchange (you can change this to any supported exchange)
+        const exchange = new ccxt.binance();
+        
+        // Fetch OHLCV data (Open, High, Low, Close, Volume)
+        const ohlcv = await exchange.fetchOHLCV(
+          `${code}/${currency}`,
+          '1d', // 1 day timeframe
+          start,
+          (end - start) / (24 * 60 * 60 * 1000) // Calculate number of days
+        );
 
-        if (!response.ok) {
-          throw new Error("API request failed");
-        }
+        // Transform OHLCV data to match our interface
+        const history: CoinHistory[] = ohlcv.map(([timestamp, , , , close, volume]) => ({
+          date: timestamp,
+          rate: close,
+          volume: volume,
+          cap: close * (mockHistoryData.circulatingSupply || 19000000) // Approximate market cap
+        }));
 
-        const data = await response.json();
-        console.log("Price history data:", data);
-        return data;
+        // Return data in the expected format
+        return {
+          ...mockHistoryData, // Use mock data for static fields
+          code,
+          name: code,
+          symbol: code,
+          history
+        };
+
       } catch (error) {
-        console.error("LiveCoinWatch API Error:", error);
+        console.error("CCXT API Error:", error);
         toast.error("Using mock data due to API unavailability");
         return mockHistoryData;
       }
