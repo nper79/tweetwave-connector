@@ -2,7 +2,7 @@ import { LeaderboardHeader } from "@/components/leaderboard/LeaderboardHeader";
 import { LeaderboardTabs } from "@/components/leaderboard/LeaderboardTabs";
 import { LeaderboardTable } from "@/components/leaderboard/LeaderboardTable";
 import { TopPerformers } from "@/components/leaderboard/TopPerformers";
-import { LatestPredictions } from "@/components/leaderboard/LatestPredictions";
+import { BestPredictions } from "@/components/leaderboard/BestPredictions";
 
 const Index = () => {
   return (
@@ -16,7 +16,7 @@ const Index = () => {
           </div>
           <div className="space-y-6">
             <TopPerformers />
-            <LatestPredictions />
+            <BestPredictions />
           </div>
         </div>
       </div>
