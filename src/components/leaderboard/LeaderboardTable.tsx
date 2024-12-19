@@ -1,5 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TrendingUp, TrendingDown, Award, Medal } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface Trader {
   rank: number;
@@ -71,17 +72,19 @@ export const LeaderboardTable = () => {
                 </div>
               </TableCell>
               <TableCell>
-                <div className="flex items-center gap-2">
-                  <div>
-                    <div className="font-semibold flex items-center gap-2">
-                      {trader.name}
-                      <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded-full">
-                        {trader.badge}
-                      </span>
+                <Link to={`/profile/${trader.name}`} className="hover:text-blue-600 transition-colors">
+                  <div className="flex items-center gap-2">
+                    <div>
+                      <div className="font-semibold flex items-center gap-2">
+                        {trader.name}
+                        <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded-full">
+                          {trader.badge}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">{trader.streak} streak</div>
                     </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">{trader.streak} streak</div>
                   </div>
-                </div>
+                </Link>
               </TableCell>
               <TableCell>
                 <div>
