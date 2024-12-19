@@ -6,15 +6,15 @@ import { LatestPredictions } from "@/components/leaderboard/LatestPredictions";
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="md:col-span-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-2 space-y-6">
             <LeaderboardHeader />
             <LeaderboardTabs />
             <LeaderboardTable />
           </div>
-          <div>
+          <div className="space-y-6">
             <TopPerformers />
             <LatestPredictions />
           </div>

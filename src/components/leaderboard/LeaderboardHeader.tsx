@@ -1,13 +1,21 @@
-import { Search } from "lucide-react";
+import { Search, Trophy } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 export const LeaderboardHeader = () => {
   return (
-    <div className="flex justify-between items-center mb-6">
-      <div className="flex items-center gap-2">
-        <div className="text-2xl font-bold">🏆 Leaderboard</div>
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+      <div className="flex items-center gap-3">
+        <Trophy className="h-8 w-8 text-yellow-500" />
+        <div>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Crypto Predictions Leaderboard
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Track the most successful crypto predictors
+          </p>
+        </div>
       </div>
-      <div className="relative w-64">
+      <div className="relative w-full md:w-64">
         <Input
           type="text"
           placeholder="Search traders..."
