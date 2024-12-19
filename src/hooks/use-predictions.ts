@@ -1,11 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { Tweet } from "@/types/twitter";
 import { analyzeTweetForPrediction, extractPredictionDetails } from "@/utils/deepseek";
+import { toast } from "sonner";
 
 export const usePredictions = (tweets: Tweet[] = [], apiKey: string) => {
   return useQuery({
     queryKey: ["predictions", tweets.map(t => t.tweet_id)],
     queryFn: async () => {
+      if (!apiKey) {
+        toast.error("DeepSeek API key is required");
+        return [];
+      }
+
+      console.log("Analyzing tweets for predictions...");
       const predictions = [];
       
       for (const tweet of tweets) {
@@ -24,6 +31,7 @@ export const usePredictions = (tweets: Tweet[] = [], apiKey: string) => {
       
       return predictions;
     },
-    enabled: tweets.length > 0 && !!apiKey
+    enabled: tweets.length > 0 && !!apiKey,
+    retry: 1
   });
 };
