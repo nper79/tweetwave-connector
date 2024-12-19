@@ -16,20 +16,40 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
   const { data: predictions } = usePredictions(tweets);
 
   const isPredictionTweet = (tweet: Tweet) => {
-    // Check if tweet contains common prediction indicators
+    if (!tweet.text) return false;
+    
+    console.log('Analyzing tweet:', tweet.text);
+    
+    // Check for crypto symbols (e.g., $BTC, $ETH)
+    const cryptoSymbolRegex = /\$[A-Z]{2,}/;
+    const hasCryptoSymbol = cryptoSymbolRegex.test(tweet.text);
+    
+    // Check for price values (e.g., $50,000 or 50k)
+    const priceRegex = /\$?\d+(?:,\d{3})*(?:\.\d+)?k?\s*(?:USD)?/i;
+    const hasPrice = priceRegex.test(tweet.text);
+    
+    // Check for prediction keywords
     const predictionKeywords = [
       'target', 'prediction', 'predict', 'forecast',
       'expecting', 'expect', 'projected', 'analysis',
-      'breakout', 'resistance', 'support', 'rally'
+      'breakout', 'resistance', 'support', 'rally',
+      'bullish', 'bearish', 'long', 'short'
     ];
     
-    const hasCryptoSymbol = tweet.text?.match(/\$[A-Z]+/);
-    const hasPriceTarget = tweet.text?.match(/\$?\d+\.?\d*[k]?/);
     const hasKeyword = predictionKeywords.some(keyword => 
       tweet.text?.toLowerCase().includes(keyword)
     );
     
-    return hasCryptoSymbol && (hasPriceTarget || hasKeyword);
+    const isPrediction = hasCryptoSymbol && (hasPrice || hasKeyword);
+    console.log('Tweet analysis:', {
+      text: tweet.text,
+      hasCryptoSymbol,
+      hasPrice,
+      hasKeyword,
+      isPrediction
+    });
+    
+    return isPrediction;
   };
 
   const renderTweet = (tweet: Tweet) => {
@@ -134,6 +154,7 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
   }
 
   if (error) {
+    console.error('Twitter timeline error:', error);
     return (
       <div className="text-center p-4">
         <p className="text-red-500">Failed to load tweets: {error.message}</p>
@@ -150,8 +171,8 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
   }
 
   const predictionTweets = tweets.filter(isPredictionTweet);
-  const regularTweets = tweets.filter(tweet => !isPredictionTweet(tweet));
-
+  console.log('Found prediction tweets:', predictionTweets.length);
+  
   return (
     <Tabs defaultValue="predictions" className="w-full">
       <TabsList className="grid w-full grid-cols-2 mb-4">
