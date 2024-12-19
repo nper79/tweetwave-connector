@@ -3,7 +3,9 @@ export const API_CONFIG = {
   RAPID_API_HOST: "crypto-price-by-api-ninjas.p.rapidapi.com",
 };
 
-export const formatCryptoSymbol = (code: string): string => {
+export const formatCryptoSymbol = (code: string | null): string | null => {
+  if (!code) return null;
+  
   // Remove any $ prefix if present
   const cleanCode = code.replace('$', '');
   

@@ -1,13 +1,17 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useTwitterTimeline } from "@/hooks/use-twitter";
 import { usePredictions } from "@/hooks/use-predictions";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { API_CONFIG, formatCryptoSymbol } from "@/utils/crypto-utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const fetchCryptoPrice = async (symbol: string) => {
+const fetchCryptoPrice = async (symbol: string | null) => {
+  if (!symbol) return null;
+  
   try {
     const formattedSymbol = formatCryptoSymbol(symbol);
+    if (!formattedSymbol) return null;
+    
     console.log(`Fetching price for symbol: ${formattedSymbol}`);
     
     const response = await fetch(
@@ -56,9 +60,10 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
     })),
   });
 
-  const getCurrentPrice = (symbol: string) => {
+  const getCurrentPrice = (symbol: string | null) => {
+    if (!symbol) return "---";
     const queryIndex = uniqueCryptos.indexOf(symbol);
-    if (queryIndex === -1) return null;
+    if (queryIndex === -1) return "---";
     return priceQueries[queryIndex].data;
   };
 
@@ -101,12 +106,12 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
         <TableBody>
           {predictions.map((prediction) => (
             <TableRow key={`${prediction.crypto}-${prediction.predictionDate}`}>
-              <TableCell className="font-medium">{prediction.crypto}</TableCell>
-              <TableCell>${prediction.priceAtPrediction.toLocaleString()}</TableCell>
+              <TableCell className="font-medium">{prediction.crypto || "---"}</TableCell>
+              <TableCell>${prediction.priceAtPrediction?.toLocaleString() || "---"}</TableCell>
               <TableCell>
                 {getCurrentPrice(prediction.symbol) 
                   ? `$${Number(getCurrentPrice(prediction.symbol)).toLocaleString()}`
-                  : 'Loading...'}
+                  : '---'}
               </TableCell>
               <TableCell className="text-green-500">+{prediction.roi24h}%</TableCell>
               <TableCell className="text-green-500">+{prediction.roi3d}%</TableCell>
