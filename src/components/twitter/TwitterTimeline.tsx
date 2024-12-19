@@ -2,6 +2,7 @@ import { Tweet } from "@/types/twitter";
 import { useTwitterTimeline } from "@/hooks/use-twitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CalendarDays, MessageCircle, Heart, Repeat2, Eye } from "lucide-react";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 interface TwitterTimelineProps {
   username?: string;
@@ -46,7 +47,6 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
   return (
     <div className="space-y-4">
       {tweets.map((tweet: Tweet) => {
-        // Skip rendering if tweet or author is undefined
         if (!tweet || !tweet.author) {
           console.warn("Invalid tweet data:", tweet);
           return null;
@@ -73,45 +73,56 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
               </div>
             </div>
             
-            <div className="flex gap-4">
+            <div className="flex gap-4 mb-4">
               <div className="flex-1">
-                <p className="text-gray-900 mb-2 whitespace-pre-wrap">{tweet.text}</p>
-                
-                <div className="flex items-center justify-between text-sm text-gray-500 mt-4">
-                  <div className="flex items-center space-x-2">
-                    <MessageCircle className="h-4 w-4" />
-                    <span>{tweet.replies || 0}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Repeat2 className="h-4 w-4" />
-                    <span>{tweet.retweets || 0}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Heart className="h-4 w-4" />
-                    <span>{tweet.favorites || 0}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Eye className="h-4 w-4" />
-                    <span>{tweet.views || 0}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <CalendarDays className="mr-2 h-4 w-4" />
-                    <time dateTime={tweet.created_at}>
-                      {new Date(tweet.created_at).toLocaleDateString()}
-                    </time>
-                  </div>
-                </div>
+                <p className="text-gray-900 whitespace-pre-wrap">{tweet.text}</p>
               </div>
               
               {hasMedia && (
-                <div className="flex-shrink-0 w-64">
-                  <img
-                    src={tweet.media.photo[0].media_url_https}
-                    alt="Tweet media"
-                    className="rounded-lg object-cover w-full h-full max-h-48"
-                  />
-                </div>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <div className="flex-shrink-0 w-64 cursor-pointer">
+                      <img
+                        src={tweet.media.photo[0].media_url_https}
+                        alt="Tweet media"
+                        className="rounded-lg object-cover w-full h-full max-h-48"
+                      />
+                    </div>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl">
+                    <img
+                      src={tweet.media.photo[0].media_url_https}
+                      alt="Tweet media"
+                      className="w-full h-auto rounded-lg"
+                    />
+                  </DialogContent>
+                </Dialog>
               )}
+            </div>
+
+            <div className="flex items-center justify-between text-sm text-gray-500 border-t pt-4">
+              <div className="flex items-center space-x-2">
+                <MessageCircle className="h-4 w-4" />
+                <span>{tweet.replies || 0}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Repeat2 className="h-4 w-4" />
+                <span>{tweet.retweets || 0}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Heart className="h-4 w-4" />
+                <span>{tweet.favorites || 0}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Eye className="h-4 w-4" />
+                <span>{tweet.views || 0}</span>
+              </div>
+              <div className="flex items-center">
+                <CalendarDays className="mr-2 h-4 w-4" />
+                <time dateTime={tweet.created_at}>
+                  {new Date(tweet.created_at).toLocaleDateString()}
+                </time>
+              </div>
             </div>
           </div>
         );
