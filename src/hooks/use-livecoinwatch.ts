@@ -43,12 +43,12 @@ export const usePriceHistory = ({ code = "BTC", currency = "USD", start, end, me
     queryKey: ["price-history", code, currency, start, end],
     queryFn: async (): Promise<CoinHistoryResponse> => {
       try {
-        const request = new Request("https://api.livecoinwatch.com/coins/single/history", {
+        const response = await fetch("https://api.livecoinwatch.com/coins/single/history", {
           method: "POST",
-          headers: new Headers({
+          headers: {
             "content-type": "application/json",
             "x-api-key": "a91bacc5-9ae1-4ea5-8f11-b764775a2671",
-          }),
+          },
           body: JSON.stringify({
             code,
             currency,
@@ -57,8 +57,6 @@ export const usePriceHistory = ({ code = "BTC", currency = "USD", start, end, me
             meta,
           }),
         });
-
-        const response = await fetch(request);
 
         if (!response.ok) {
           const errorData = await response.json();
