@@ -1,12 +1,20 @@
-export const calculateROI = (entryPrice: number, currentPrice: number): number => {
-  return ((currentPrice - entryPrice) / entryPrice) * 100;
-};
-
-export const formatCryptoSymbol = (code: string): string => {
-  return `${code.toUpperCase()}USDT`;
-};
-
 export const API_CONFIG = {
   RAPID_API_KEY: "d51b9a68c9mshdf25f4ca2622a18p1602edjsn81602d153c16",
   RAPID_API_HOST: "crypto-price-by-api-ninjas.p.rapidapi.com",
+};
+
+export const formatCryptoSymbol = (code: string): string => {
+  // Remove any $ prefix if present
+  const cleanCode = code.replace('$', '');
+  
+  // Map common symbols to their API-compatible format
+  const symbolMap: { [key: string]: string } = {
+    'BTC': 'BTCUSDT',
+    'ETH': 'ETHUSDT',
+    'SOL': 'SOLUSDT',
+    'ORAI': 'BTC', // Temporarily map unsupported tokens to BTC as fallback
+    // Add more mappings as needed
+  };
+
+  return symbolMap[cleanCode] || `${cleanCode}USDT`;
 };

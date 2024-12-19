@@ -6,23 +6,32 @@ import { API_CONFIG, formatCryptoSymbol } from "@/utils/crypto-utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const fetchCryptoPrice = async (symbol: string) => {
-  const response = await fetch(
-    `https://${API_CONFIG.RAPID_API_HOST}/v1/cryptoprice?symbol=${formatCryptoSymbol(symbol)}`,
-    {
-      method: 'GET',
-      headers: {
-        'X-RapidAPI-Key': API_CONFIG.RAPID_API_KEY,
-        'X-RapidAPI-Host': API_CONFIG.RAPID_API_HOST
+  try {
+    const formattedSymbol = formatCryptoSymbol(symbol);
+    console.log(`Fetching price for symbol: ${formattedSymbol}`);
+    
+    const response = await fetch(
+      `https://${API_CONFIG.RAPID_API_HOST}/v1/cryptoprice?symbol=${formattedSymbol}`,
+      {
+        method: 'GET',
+        headers: {
+          'X-RapidAPI-Key': API_CONFIG.RAPID_API_KEY,
+          'X-RapidAPI-Host': API_CONFIG.RAPID_API_HOST
+        }
       }
+    );
+
+    if (!response.ok) {
+      console.error(`Error fetching price for ${symbol}:`, response.statusText);
+      return null;
     }
-  );
 
-  if (!response.ok) {
-    throw new Error('Failed to fetch price');
+    const data = await response.json();
+    return data.price;
+  } catch (error) {
+    console.error(`Failed to fetch price for ${symbol}:`, error);
+    return null;
   }
-
-  const data = await response.json();
-  return data.price;
 };
 
 interface PredictionsTableProps {
@@ -42,6 +51,8 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
       queryKey: ['crypto-price', crypto],
       queryFn: () => fetchCryptoPrice(crypto),
       refetchInterval: 30000,
+      retry: 2,
+      retryDelay: 1000,
     })),
   });
 
