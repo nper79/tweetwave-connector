@@ -1,41 +1,9 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { useTwitterTimeline } from "@/hooks/use-twitter";
+import { usePredictions } from "@/hooks/use-predictions";
 import { useQuery } from "@tanstack/react-query";
 import { API_CONFIG, formatCryptoSymbol } from "@/utils/crypto-utils";
-
-interface Prediction {
-  crypto: string;
-  symbol: string;
-  priceAtPrediction: number;
-  predictionDate: number;
-  roi24h: number;
-  roi3d: number;
-  roi1w: number;
-  roi1m: number;
-}
-
-const predictions: Omit<Prediction, 'currentPrice'>[] = [
-  {
-    crypto: "Bitcoin",
-    symbol: "BTC",
-    priceAtPrediction: 35000,
-    predictionDate: Date.now() - 7 * 24 * 60 * 60 * 1000,
-    roi24h: 2.86,
-    roi3d: 7.14,
-    roi1w: 11.43,
-    roi1m: 17.14,
-  },
-  {
-    crypto: "Ethereum",
-    symbol: "ETH",
-    priceAtPrediction: 2000,
-    predictionDate: Date.now() - 3 * 24 * 60 * 60 * 1000,
-    roi24h: 2.86,
-    roi3d: 7.14,
-    roi1w: 11.43,
-    roi1m: 17.14,
-  },
-];
+import { Skeleton } from "@/components/ui/skeleton";
 
 const fetchCryptoPrice = async (symbol: string) => {
   const response = await fetch(
@@ -57,7 +25,14 @@ const fetchCryptoPrice = async (symbol: string) => {
   return data.price;
 };
 
-export const PredictionsTable = () => {
+interface PredictionsTableProps {
+  username?: string;
+}
+
+export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTableProps) => {
+  const { data: tweets, isLoading: tweetsLoading } = useTwitterTimeline(username);
+  const { data: predictionsData, isLoading: predictionsLoading } = usePredictions(tweets || []);
+
   const { data: btcPrice } = useQuery({
     queryKey: ['crypto-price', 'BTC'],
     queryFn: () => fetchCryptoPrice('BTC'),
@@ -76,7 +51,28 @@ export const PredictionsTable = () => {
     return null;
   };
 
-  // We'll need to integrate this with the predictions from the tweets
+  if (tweetsLoading || predictionsLoading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+      </div>
+    );
+  }
+
+  const predictions = predictionsData?.map(p => ({
+    crypto: p.prediction.crypto,
+    symbol: p.prediction.crypto,
+    priceAtPrediction: p.prediction.price_at_prediction,
+    targetPrice: p.prediction.target_price,
+    predictionDate: new Date(p.prediction.prediction_date).getTime(),
+    roi24h: 2.86, // Mock ROI data for now
+    roi3d: 7.14,
+    roi1w: 11.43,
+    roi1m: 17.14,
+  })) || [];
+
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -93,7 +89,7 @@ export const PredictionsTable = () => {
         </TableHeader>
         <TableBody>
           {predictions.map((prediction) => (
-            <TableRow key={prediction.crypto}>
+            <TableRow key={`${prediction.crypto}-${prediction.predictionDate}`}>
               <TableCell className="font-medium">{prediction.crypto}</TableCell>
               <TableCell>${prediction.priceAtPrediction.toLocaleString()}</TableCell>
               <TableCell>
