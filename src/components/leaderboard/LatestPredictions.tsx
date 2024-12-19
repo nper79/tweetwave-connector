@@ -77,7 +77,7 @@ export const LatestPredictions = () => {
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="font-semibold flex items-center gap-2">
-                      {tweet.author?.name || "Unknown Author"}
+                      {tweet.author?.screen_name || "Unknown Author"}
                       {tweet.text?.toLowerCase().includes('$') && (
                         <span className="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-100 rounded-md">
                           {tweet.text.match(/\$[A-Z]+/)?.[0] || '$CRYPTO'}
@@ -99,7 +99,13 @@ export const LatestPredictions = () => {
                       </span>
                     </div>
                   </div>
-                  <ExternalLink className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer ml-2 flex-shrink-0" />
+                  <a 
+                    href={`https://twitter.com/${tweet.author?.screen_name}/status/${tweet.tweet_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ExternalLink className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer ml-2 flex-shrink-0" />
+                  </a>
                 </div>
               </div>
             )
