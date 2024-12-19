@@ -1,7 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useTwitterTimeline } from "@/hooks/use-twitter";
 import { usePredictions } from "@/hooks/use-predictions";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { API_CONFIG, formatCryptoSymbol } from "@/utils/crypto-utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -33,22 +33,22 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
   const { data: tweets, isLoading: tweetsLoading } = useTwitterTimeline(username);
   const { data: predictionsData, isLoading: predictionsLoading } = usePredictions(tweets || []);
 
-  const { data: btcPrice } = useQuery({
-    queryKey: ['crypto-price', 'BTC'],
-    queryFn: () => fetchCryptoPrice('BTC'),
-    refetchInterval: 30000,
-  });
-
-  const { data: ethPrice } = useQuery({
-    queryKey: ['crypto-price', 'ETH'],
-    queryFn: () => fetchCryptoPrice('ETH'),
-    refetchInterval: 30000,
+  // Get unique crypto symbols from predictions
+  const uniqueCryptos = [...new Set(predictionsData?.map(p => p.prediction.crypto) || [])];
+  
+  // Fetch prices for all unique cryptos
+  const priceQueries = useQueries({
+    queries: uniqueCryptos.map(crypto => ({
+      queryKey: ['crypto-price', crypto],
+      queryFn: () => fetchCryptoPrice(crypto),
+      refetchInterval: 30000,
+    })),
   });
 
   const getCurrentPrice = (symbol: string) => {
-    if (symbol === 'BTC') return btcPrice;
-    if (symbol === 'ETH') return ethPrice;
-    return null;
+    const queryIndex = uniqueCryptos.indexOf(symbol);
+    if (queryIndex === -1) return null;
+    return priceQueries[queryIndex].data;
   };
 
   if (tweetsLoading || predictionsLoading) {
