@@ -3,6 +3,7 @@ import { ExternalLink, Target, Clock } from "lucide-react";
 import { useTwitterTimeline } from "@/hooks/use-twitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tweet } from "@/types/twitter";
+import { formatDistanceToNow } from "date-fns";
 
 export const LatestPredictions = () => {
   const { data: tweets, isLoading, error } = useTwitterTimeline("SolbergInvest");
@@ -65,41 +66,43 @@ export const LatestPredictions = () => {
         <span className="text-sm text-gray-500 dark:text-gray-400">Live Updates</span>
       </CardHeader>
       <CardContent className="space-y-4">
-        {predictionsFromTweets?.length === 0 ? (
+        {!predictionsFromTweets || predictionsFromTweets.length === 0 ? (
           <div className="p-3 rounded-md bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400">
             No predictions found
           </div>
         ) : (
-          predictionsFromTweets?.map((tweet: Tweet) => (
-            <div key={tweet.tweet_id} className="p-3 rounded-md bg-gray-50 dark:bg-gray-900">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <div className="font-semibold flex items-center gap-2">
-                    {tweet.author.name}
-                    {tweet.text.toLowerCase().includes('$') && (
-                      <span className="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-100 rounded-md">
-                        {tweet.text.match(/\$[A-Z]+/)?.[0] || '$CRYPTO'}
+          predictionsFromTweets.map((tweet: Tweet) => (
+            tweet && (
+              <div key={tweet.tweet_id} className="p-3 rounded-md bg-gray-50 dark:bg-gray-900">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="font-semibold flex items-center gap-2">
+                      {tweet.author?.name || "Unknown Author"}
+                      {tweet.text?.toLowerCase().includes('$') && (
+                        <span className="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-100 rounded-md">
+                          {tweet.text.match(/\$[A-Z]+/)?.[0] || '$CRYPTO'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+                      {tweet.text}
+                    </div>
+                    <div className="flex items-center gap-3 mt-2">
+                      {tweet.text?.match(/target:?\s*\$?\d+\.?\d*/i) && (
+                        <span className="text-green-500 text-sm font-medium">
+                          Target: {tweet.text.match(/target:?\s*(\$?\d+\.?\d*)/i)?.[1]}
+                        </span>
+                      )}
+                      <span className="text-gray-400 text-sm flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {formatDistanceToNow(new Date(tweet.created_at), { addSuffix: true })}
                       </span>
-                    )}
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-                    {tweet.text}
-                  </div>
-                  <div className="flex items-center gap-3 mt-2">
-                    {tweet.text.match(/target:?\s*\$?\d+\.?\d*/i) && (
-                      <span className="text-green-500 text-sm font-medium">
-                        Target: {tweet.text.match(/target:?\s*(\$?\d+\.?\d*)/i)?.[1]}
-                      </span>
-                    )}
-                    <span className="text-gray-400 text-sm flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {new Date(tweet.created_at).toRelativeTimeString()}
-                    </span>
-                  </div>
+                  <ExternalLink className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer ml-2 flex-shrink-0" />
                 </div>
-                <ExternalLink className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer ml-2 flex-shrink-0" />
               </div>
-            </div>
+            )
           ))
         )}
       </CardContent>
