@@ -11,12 +11,13 @@ export const formatCryptoSymbol = (code: string | null): string | null => {
   
   // Map common symbols to their API-compatible format
   const symbolMap: { [key: string]: string } = {
-    'BTC': 'BTCUSDT',
-    'ETH': 'ETHUSDT',
-    'SOL': 'SOLUSDT',
-    'ORAI': 'BTC', // Temporarily map unsupported tokens to BTC as fallback
+    'BTC': 'BTCUSD',
+    'ETH': 'ETHUSD',
+    'SOL': 'SOLUSD',
+    'ORAI': null, // Unsupported token
     // Add more mappings as needed
   };
 
-  return symbolMap[cleanCode] || `${cleanCode}USDT`;
+  // Return mapped symbol or default format
+  return symbolMap[cleanCode] || `${cleanCode}USD`;
 };
