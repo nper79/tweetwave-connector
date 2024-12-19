@@ -1,8 +1,10 @@
 import { Tweet } from "@/types/twitter";
 import { useTwitterTimeline } from "@/hooks/use-twitter";
+import { usePredictions } from "@/hooks/use-predictions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CalendarDays, MessageCircle, Heart, Repeat2, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 interface TwitterTimelineProps {
   username?: string;
@@ -10,10 +12,9 @@ interface TwitterTimelineProps {
 
 export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps) => {
   const { data: tweets, isLoading, error } = useTwitterTimeline(username);
+  const { data: predictions } = usePredictions(tweets, "YOUR_API_KEY"); // We'll need to handle this securely
 
-  console.log("Twitter Timeline Props:", { username });
-  console.log("Twitter Timeline Data:", tweets);
-  console.log("Twitter Timeline Error:", error);
+  console.log("Predictions:", predictions);
 
   if (isLoading) {
     return (
@@ -46,18 +47,21 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
 
   return (
     <div className="space-y-4">
-      {tweets.map((tweet: Tweet) => {
+      {tweets?.map((tweet: Tweet) => {
         if (!tweet || !tweet.author) {
           console.warn("Invalid tweet data:", tweet);
           return null;
         }
 
         const hasMedia = tweet.media?.photo && tweet.media.photo[0];
+        const isPrediction = predictions?.some(p => p.tweet.tweet_id === tweet.tweet_id);
 
         return (
           <div
             key={tweet.tweet_id}
-            className="p-4 border rounded-lg hover:border-blue-400 transition-colors bg-white shadow-sm"
+            className={`p-4 border rounded-lg hover:border-blue-400 transition-colors bg-white shadow-sm ${
+              isPrediction ? 'border-green-400' : ''
+            }`}
           >
             <div className="flex items-start space-x-3 mb-2">
               {tweet.author.avatar && (

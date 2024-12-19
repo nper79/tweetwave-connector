@@ -76,6 +76,7 @@ export const PredictionsTable = () => {
     return null;
   };
 
+  // We'll need to integrate this with the predictions from the tweets
   return (
     <div className="overflow-x-auto">
       <Table>
