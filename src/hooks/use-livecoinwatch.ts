@@ -1,38 +1,60 @@
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+interface CoinHistory {
+  date: number;
+  rate: number;
+  volume: number;
+  cap: number;
+}
+
+interface CoinHistoryResponse {
+  code: string;
+  name: string;
+  symbol: string;
+  rank: number;
+  age: number;
+  color: string;
+  png32: string;
+  png64: string;
+  webp32: string;
+  webp64: string;
+  exchanges: number;
+  markets: number;
+  pairs: number;
+  allTimeHighUSD: number;
+  circulatingSupply: number;
+  totalSupply: number | null;
+  maxSupply: number;
+  categories: string[];
+  history: CoinHistory[];
+}
+
 interface PriceHistoryParams {
+  code?: string;
   currency?: string;
   start: number;
   end: number;
+  meta?: boolean;
 }
 
-interface PriceHistoryResponse {
-  history: {
-    date: number;
-    cap: number;
-    volume: number;
-    liquidity: number;
-    btcDominance: number;
-  }[];
-}
-
-export const usePriceHistory = ({ currency = "USD", start, end }: PriceHistoryParams) => {
+export const usePriceHistory = ({ code = "BTC", currency = "USD", start, end, meta = true }: PriceHistoryParams) => {
   return useQuery({
-    queryKey: ["price-history", currency, start, end],
-    queryFn: async (): Promise<PriceHistoryResponse> => {
+    queryKey: ["price-history", code, currency, start, end],
+    queryFn: async (): Promise<CoinHistoryResponse> => {
       try {
-        const response = await fetch("https://api.livecoinwatch.com/overview/history", {
+        const response = await fetch("https://api.livecoinwatch.com/coins/single/history", {
           method: "POST",
           headers: {
-            "accept": "application/json",
             "content-type": "application/json",
             "x-api-key": "a91bacc5-9ae1-4ea5-8f11-b764775a2671",
           },
           body: JSON.stringify({
+            code,
             currency,
             start,
             end,
+            meta,
           }),
         });
 
