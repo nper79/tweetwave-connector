@@ -46,23 +46,33 @@ export const usePriceHistory = ({ code = "BTC", currency = "USD", start, end, me
     queryKey: ["price-history", code, currency, start, end],
     queryFn: async (): Promise<CoinHistoryResponse> => {
       try {
+        // Convert code to uppercase as required by the API
+        const symbol = code.toUpperCase();
+        console.log("Fetching price for symbol:", symbol);
+
         const response = await fetch(
-          `https://${RAPID_API_HOST}/v1/cryptoprice?symbol=${code}`,
+          `https://${RAPID_API_HOST}/v1/cryptoprice?symbol=${symbol}`,
           {
             method: 'GET',
             headers: {
-              'x-rapidapi-key': RAPID_API_KEY,
-              'x-rapidapi-host': RAPID_API_HOST
+              'X-RapidAPI-Key': RAPID_API_KEY,
+              'X-RapidAPI-Host': RAPID_API_HOST
             }
           }
         );
 
         if (!response.ok) {
-          throw new Error("Failed to fetch price data");
+          const errorData = await response.json();
+          console.error("API Error Response:", errorData);
+          throw new Error(errorData.error || "Failed to fetch price data");
         }
 
         const priceData = await response.json();
         console.log("API Response:", priceData);
+
+        if (!priceData.price) {
+          throw new Error("Invalid price data received");
+        }
 
         // Transform the API response to match our expected format
         const mockData: CoinHistoryResponse = {
