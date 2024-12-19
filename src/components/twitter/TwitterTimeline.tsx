@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CalendarDays, MessageCircle, Heart, Repeat2, Eye } from "lucide-react";
 
 export const TwitterTimeline = () => {
-  const { data: tweets, isLoading, error } = useTwitterTimeline("SolbergInvest");
+  const { data: tweets, isLoading, error } = useTwitterTimeline("elonmusk");
 
   console.log("Twitter Timeline Data:", tweets);
 
