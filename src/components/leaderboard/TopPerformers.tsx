@@ -13,12 +13,12 @@ export const TopPerformers = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-4">
-          <div className="p-4 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-100 dark:border-blue-800">
+          <div className="p-3 rounded-md bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-100 dark:border-blue-800">
             <div className="flex justify-between items-start">
               <div>
                 <div className="font-semibold flex items-center gap-2">
                   SolbergInvest
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm">
                     <Crown className="h-3.5 w-3.5" />
                     Elite Predictor
                   </span>
@@ -32,12 +32,12 @@ export const TopPerformers = () => {
             </div>
           </div>
 
-          <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-900/40 dark:to-blue-900/20 border border-gray-100 dark:border-gray-800">
+          <div className="p-3 rounded-md bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-900/40 dark:to-blue-900/20 border border-gray-100 dark:border-gray-800">
             <div className="flex justify-between items-start">
               <div>
                 <div className="font-semibold flex items-center gap-2">
                   CryptoWhale
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 shadow-sm">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 shadow-sm">
                     <Award className="h-3.5 w-3.5" />
                     Pro Trader
                   </span>
@@ -51,12 +51,12 @@ export const TopPerformers = () => {
             </div>
           </div>
 
-          <div className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-900/40 dark:to-blue-900/20 border border-gray-100 dark:border-gray-800">
+          <div className="p-3 rounded-md bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-900/40 dark:to-blue-900/20 border border-gray-100 dark:border-gray-800">
             <div className="flex justify-between items-start">
               <div>
                 <div className="font-semibold flex items-center gap-2">
                   BlockchainGuru
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 shadow-sm">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 shadow-sm">
                     <Star className="h-3.5 w-3.5" />
                     Rising Star
                   </span>
