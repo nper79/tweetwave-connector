@@ -17,7 +17,6 @@ interface Prediction {
   roi1m: number;
 }
 
-// Sample predictions data - in a real app, this would come from your backend
 const predictions: Prediction[] = [
   {
     crypto: "Bitcoin",
@@ -48,14 +47,13 @@ const Profile = () => {
   const now = Date.now();
   const oneMonthAgo = now - 30 * 24 * 60 * 60 * 1000;
 
-  // Example of using the hook for Bitcoin price history - now using the correct 'coin' parameter
+  // Updated to remove the coin parameter
   const { data: btcHistory } = usePriceHistory({
-    coin: "BTC",
     start: oneMonthAgo,
     end: now,
   });
 
-  console.log("BTC Price History:", btcHistory);
+  console.log("Market History:", btcHistory);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8">
