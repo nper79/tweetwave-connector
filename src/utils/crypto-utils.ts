@@ -1,8 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export const API_CONFIG = {
-  RAPID_API_KEY: "d51b9a68c9mshdf25f4ca2622a18p1602edjsn81602d153c16",
-  RAPID_API_HOST: "crypto-market-prices.p.rapidapi.com",
+  LIVECOINWATCH_API_HOST: "api.livecoinwatch.com",
 };
 
 export const formatCryptoSymbol = (code: string | null): string | null => {
@@ -78,6 +77,57 @@ export const fetchHistoricalPrice = async (symbol: string, timestamp: number): P
     return closestPrice.rate;
   } catch (error) {
     console.error(`Failed to fetch historical price for ${symbol}:`, error);
+    return null;
+  }
+};
+
+export const fetchCryptoPrice = async (symbol: string | null): Promise<number | null> => {
+  if (!symbol) return null;
+  
+  try {
+    const formattedSymbol = formatCryptoSymbol(symbol);
+    if (!formattedSymbol) return null;
+    
+    console.log(`Fetching current price for symbol: ${formattedSymbol}`);
+    
+    const { data: { secret: apiKey } } = await supabase.functions.invoke('get-secret-value', {
+      body: { name: 'LIVECOINWATCH_API_KEY' }
+    });
+
+    if (!apiKey) {
+      console.error('LiveCoinWatch API key not found');
+      return null;
+    }
+
+    const response = await fetch("https://api.livecoinwatch.com/coins/single", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": apiKey,
+      },
+      body: JSON.stringify({
+        currency: "USD",
+        code: formattedSymbol,
+        meta: true,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error(`Error fetching current price for ${symbol}:`, response.statusText);
+      return null;
+    }
+
+    const data = await response.json();
+    console.log(`Price data received for ${symbol}:`, data);
+    
+    if (!data || !data.rate) {
+      console.error(`Invalid price data for ${symbol}:`, data);
+      return null;
+    }
+
+    return data.rate;
+  } catch (error) {
+    console.error(`Failed to fetch current price for ${symbol}:`, error);
     return null;
   }
 };
