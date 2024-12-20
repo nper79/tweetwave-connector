@@ -22,22 +22,18 @@ interface PredictionRowProps {
 export const PredictionRow = ({ prediction }: PredictionRowProps) => {
   const { data: currentPrice, isLoading, isError } = useQuery({
     queryKey: ['crypto-price', prediction.crypto],
-    queryFn: () => fetchCryptoPrice(prediction.crypto),
+    queryFn: async () => {
+      console.log(`Fetching current price for ${prediction.crypto}...`);
+      const price = await fetchCryptoPrice(prediction.crypto);
+      console.log(`Received price for ${prediction.crypto}:`, price);
+      return price;
+    },
     refetchInterval: 30000,
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     staleTime: 20000,
     enabled: !!prediction.crypto
   });
-
-  // Only log when there's an error or significant price change
-  if (isError || (currentPrice && Math.abs(currentPrice - prediction.priceAtPrediction) / prediction.priceAtPrediction > 0.05)) {
-    console.log(`Price update for ${prediction.crypto}:`, {
-      currentPrice,
-      priceAtPrediction: prediction.priceAtPrediction,
-      error: isError ? 'Failed to fetch price' : null
-    });
-  }
 
   if (isLoading) {
     return (

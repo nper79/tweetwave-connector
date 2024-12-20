@@ -59,22 +59,32 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
     const formattedSymbol = formatCryptoSymbol(symbol);
     if (!formattedSymbol) return null;
     
+    console.log(`Fetching current price for ${formattedSymbol}...`);
+    
     // Always fetch fresh data first
     const { data: invocationData, error: invocationError } = await supabase.functions.invoke('fetch-coincap-prices', {
       body: { symbols: [formattedSymbol] }
     });
 
     if (invocationError) {
-      console.error('Error invoking edge function:', invocationError);
+      console.error(`Error invoking edge function for ${formattedSymbol}:`, invocationError);
       // Try to get the latest price from DB as fallback
-      return await fetchPriceFromDB(formattedSymbol);
+      const latestPrice = await fetchPriceFromDB(formattedSymbol);
+      if (latestPrice) {
+        console.log(`Found fallback price in DB for ${formattedSymbol}:`, latestPrice);
+        return latestPrice;
+      }
+      return null;
     }
 
     // Get the latest price after fetching fresh data
     const latestPrice = await fetchPriceFromDB(formattedSymbol);
-    if (latestPrice) return latestPrice;
+    if (latestPrice) {
+      console.log(`Successfully fetched current price for ${formattedSymbol}:`, latestPrice);
+      return latestPrice;
+    }
 
-    console.error(`No price found for ${symbol} after multiple attempts`);
+    console.error(`No price found for ${formattedSymbol} after multiple attempts`);
     return null;
   } catch (error) {
     console.error(`Failed to fetch price for ${symbol}:`, error);
