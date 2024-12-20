@@ -19,15 +19,12 @@ serve(async (req) => {
       throw new Error('RapidAPI key not found');
     }
 
-    const cryptos = ['BTC', 'ETH', 'SOL', 'XRP', 'PEPE'];
+    const cryptos = ['BTC', 'ETH', 'SOL', 'XRP', 'PEPE', 'FLOKI'];
     const prices = [];
 
     for (const symbol of cryptos) {
-      // For PEPE we need to use a different endpoint format
-      const endpoint = symbol === 'PEPE' 
-        ? `https://crypto-market-prices.p.rapidapi.com/price?symbol=PEPEUSDT`
-        : `https://crypto-market-prices.p.rapidapi.com/price?symbol=${symbol}USDT`;
-        
+      // Use the /tokens endpoint for all cryptocurrencies
+      const endpoint = `https://crypto-market-prices.p.rapidapi.com/tokens/${symbol}`;
       console.log(`Fetching ${symbol} price from endpoint:`, endpoint);
       
       try {
@@ -48,8 +45,8 @@ serve(async (req) => {
         const data = await response.json();
         console.log(`Raw data for ${symbol}:`, data);
 
-        if (data && data.price) {
-          const price = parseFloat(data.price);
+        if (data && data.data && data.data.price) {
+          const price = parseFloat(data.data.price);
           console.log(`Parsed price for ${symbol}:`, price);
           
           prices.push({
