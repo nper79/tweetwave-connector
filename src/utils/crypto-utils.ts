@@ -1,4 +1,7 @@
-import { fetchFromLiveCoinWatch } from "./livecoinwatch-api";
+import ccxt from 'ccxt';
+
+// Initialize Binance exchange (we'll use it as our data source)
+const exchange = new ccxt.binance();
 
 export const formatCryptoSymbol = (code: string | null): string | null => {
   if (!code) return null;
@@ -6,19 +9,18 @@ export const formatCryptoSymbol = (code: string | null): string | null => {
   // Remove any $ prefix if present
   const cleanCode = code.replace('$', '');
   
-  // Map common symbols to their API-compatible format
+  // Map common symbols to their CCXT-compatible format
   const symbolMap: { [key: string]: string } = {
-    'BTC': 'BTC',
-    'ETH': 'ETH',
-    'SOL': 'SOL',
-    'ORAI': 'ORAI',
-    'HBAR': 'HBAR',
-    'FIL': 'FIL',
-    'LDO': 'LDO',
-    // Add more mappings as needed
+    'BTC': 'BTC/USDT',
+    'ETH': 'ETH/USDT',
+    'SOL': 'SOL/USDT',
+    'ORAI': 'ORAI/USDT',
+    'HBAR': 'HBAR/USDT',
+    'FIL': 'FIL/USDT',
+    'LDO': 'LDO/USDT',
   };
 
-  return symbolMap[cleanCode] || cleanCode;
+  return symbolMap[cleanCode] || `${cleanCode}/USDT`;
 };
 
 export const fetchHistoricalPrice = async (symbol: string, timestamp: number): Promise<number | null> => {
@@ -28,22 +30,29 @@ export const fetchHistoricalPrice = async (symbol: string, timestamp: number): P
 
     console.log(`Fetching historical price for ${formattedSymbol} at ${new Date(timestamp).toISOString()}`);
 
-    const data = await fetchFromLiveCoinWatch('history', formattedSymbol, {
-      start: timestamp - 300000, // 5 minutes before
-      end: timestamp + 300000,   // 5 minutes after
-    });
-    
-    if (!data.history || data.history.length === 0) {
+    // CCXT requires timestamp in milliseconds
+    const since = timestamp - 300000; // 5 minutes before
+    const limit = 10; // Number of candles to fetch
+
+    const ohlcv = await exchange.fetchOHLCV(
+      formattedSymbol,
+      '1m', // 1-minute timeframe
+      since,
+      limit
+    );
+
+    if (!ohlcv || ohlcv.length === 0) {
       console.error(`No historical price data found for ${symbol} at ${new Date(timestamp).toISOString()}`);
       return null;
     }
 
-    // Find the closest price to the target timestamp
-    const closestPrice = data.history.reduce((prev, curr) => {
-      return Math.abs(curr.date - timestamp) < Math.abs(prev.date - timestamp) ? curr : prev;
+    // Find the closest candle to the target timestamp
+    const targetCandle = ohlcv.reduce((prev, curr) => {
+      return Math.abs(curr[0] - timestamp) < Math.abs(prev[0] - timestamp) ? curr : prev;
     });
 
-    return closestPrice.rate;
+    // Return the closing price of the closest candle
+    return targetCandle[4];
   } catch (error) {
     console.error(`Failed to fetch historical price for ${symbol}:`, error);
     return null;
@@ -59,14 +68,14 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
     
     console.log(`Fetching current price for symbol: ${formattedSymbol}`);
     
-    const data = await fetchFromLiveCoinWatch('single', formattedSymbol);
+    const ticker = await exchange.fetchTicker(formattedSymbol);
     
-    if (!data || typeof data.rate !== 'number') {
-      console.error(`Invalid price data received for ${symbol}:`, data);
+    if (!ticker || typeof ticker.last !== 'number') {
+      console.error(`Invalid price data received for ${symbol}:`, ticker);
       return null;
     }
     
-    return data.rate;
+    return ticker.last;
   } catch (error) {
     console.error(`Failed to fetch current price for ${symbol}:`, error);
     return null;
