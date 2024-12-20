@@ -14,6 +14,21 @@ serve(async (req) => {
   try {
     console.log('Starting crypto price fetch from Binance API...');
     
+    // Get the requested symbols from the request body
+    const { symbols = [] } = await req.json();
+    console.log('Requested symbols:', symbols);
+
+    if (!symbols || symbols.length === 0) {
+      console.error('No symbols provided in request');
+      return new Response(
+        JSON.stringify({ error: 'No symbols provided' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400
+        }
+      );
+    }
+
     // Fetch all prices at once from Binance
     const response = await fetch('https://api.binance.com/api/v3/ticker/price');
     
@@ -36,33 +51,46 @@ serve(async (req) => {
     const allPrices = await response.json();
     console.log('Successfully fetched all prices from Binance');
 
-    // Get the requested symbols from the request body
-    const { symbols = [] } = await req.json();
-    console.log('Requested symbols:', symbols);
-
     const prices = [];
+    const timestamp = new Date().toISOString();
 
     for (const symbol of symbols) {
       console.log(`Processing ${symbol} price...`);
       
-      const priceData = allPrices.find(p => p.symbol === symbol);
+      // Make sure we're looking for the symbol with USDT suffix
+      const searchSymbol = symbol.endsWith('USDT') ? symbol : `${symbol}USDT`;
+      const priceData = allPrices.find(p => p.symbol === searchSymbol);
       
       if (priceData) {
         const price = parseFloat(priceData.price);
         console.log(`Found price for ${symbol}:`, price);
         
-        // Store in our format
+        // Store without USDT suffix
+        const cleanSymbol = symbol.replace(/USDT$/i, '');
         prices.push({
-          symbol: symbol.replace(/USDT$/, ''), // Remove USDT for storage
+          symbol: cleanSymbol,
           price,
-          timestamp: new Date().toISOString()
+          timestamp
         });
       } else {
-        console.log(`No price found for ${symbol}`);
+        console.log(`No price found for ${searchSymbol}`);
       }
     }
 
     console.log(`Successfully processed ${prices.length} prices:`, prices);
+
+    if (prices.length === 0) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'No prices found for provided symbols',
+          requestedSymbols: symbols 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 404
+        }
+      );
+    }
 
     // Insert prices into the database
     const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
@@ -82,6 +110,8 @@ serve(async (req) => {
 
       if (insertError) {
         console.error(`Error inserting price for ${price.symbol}:`, insertError);
+      } else {
+        console.log(`Successfully stored price for ${price.symbol}`);
       }
     }
 

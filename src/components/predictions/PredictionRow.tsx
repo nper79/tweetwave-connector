@@ -26,12 +26,14 @@ export const PredictionRow = ({ prediction }: PredictionRowProps) => {
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     staleTime: 20000,
+    enabled: !!prediction.crypto
   });
 
   console.log(`PredictionRow - ${prediction.crypto}:`, {
     currentPrice,
     isLoading,
-    isError
+    isError,
+    prediction
   });
 
   if (isLoading) {

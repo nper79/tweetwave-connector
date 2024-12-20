@@ -33,12 +33,11 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
     // Try to get the latest price from the database
     const price = await fetchPriceFromDB(formattedSymbol);
     console.log(`Price from DB for ${formattedSymbol}:`, price);
-    if (price !== null) return price;
-
-    // If we don't have a recent price, fetch fresh data
+    
+    // Always fetch fresh data to ensure we have the latest prices
     console.log(`Fetching fresh price for ${formattedSymbol}...`);
     const { data, error: invocationError } = await supabase.functions.invoke('fetch-coincap-prices', {
-      body: { symbols: [formattedSymbol] }
+      body: { symbols: [symbol] }
     });
 
     if (invocationError) {
@@ -49,7 +48,7 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
     // Get the latest price after fetching fresh data
     const updatedPrice = await fetchPriceFromDB(formattedSymbol);
     console.log(`Updated price for ${formattedSymbol}:`, updatedPrice);
-    return updatedPrice;
+    return updatedPrice || price; // Return the updated price or fall back to the cached price
   } catch (error) {
     console.error(`Failed to fetch price for ${symbol}:`, error);
     return null;
