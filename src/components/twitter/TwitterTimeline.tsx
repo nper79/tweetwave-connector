@@ -58,17 +58,26 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
     );
   }
 
-  // Sort tweets by date (newest first)
-  const sortedTweets = [...tweets].sort((a, b) => 
-    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
-
-  const predictionTweets = predictions?.map(p => p.tweet) || [];
-  // Sort prediction tweets by date (newest first)
-  const sortedPredictionTweets = [...predictionTweets].sort((a, b) => 
-    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
+  // Ensure we have arrays to work with and create copies for sorting
+  const tweetsToSort = Array.isArray(tweets) ? [...tweets] : [];
+  const predictionTweets = predictions?.map(p => p.tweet).filter(Boolean) || [];
   
+  // Sort tweets by date (newest first)
+  const sortedTweets = tweetsToSort.sort((a, b) => {
+    const dateA = new Date(a.created_at).getTime();
+    const dateB = new Date(b.created_at).getTime();
+    return dateB - dateA;
+  });
+
+  // Sort prediction tweets by date (newest first)
+  const sortedPredictionTweets = [...predictionTweets].sort((a, b) => {
+    const dateA = new Date(a.created_at).getTime();
+    const dateB = new Date(b.created_at).getTime();
+    return dateB - dateA;
+  });
+  
+  console.log('Original tweets length:', tweets.length);
+  console.log('Sorted tweets length:', sortedTweets.length);
   console.log('Found prediction tweets:', sortedPredictionTweets.length);
   
   return (
