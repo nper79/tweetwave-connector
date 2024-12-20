@@ -1,7 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useTwitterTimeline } from "@/hooks/use-twitter";
 import { usePredictions } from "@/hooks/use-predictions";
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { API_CONFIG, formatCryptoSymbol, fetchHistoricalPrice } from "@/utils/crypto-utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -68,25 +68,35 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
   const { data: tweets, isLoading: tweetsLoading } = useTwitterTimeline(username);
   const { data: predictionsData, isLoading: predictionsLoading } = usePredictions(tweets || []);
 
-  // Get unique crypto symbols from predictions
-  const predictions = predictionsData?.map(async p => {
-    const historicalPrice = await fetchHistoricalPrice(
-      p.prediction.crypto,
-      new Date(p.prediction.prediction_date).getTime()
-    );
-    
-    return {
-      crypto: p.prediction.crypto,
-      symbol: p.prediction.crypto,
-      priceAtPrediction: historicalPrice || p.prediction.price_at_prediction,
-      targetPrice: p.prediction.target_price,
-      predictionDate: new Date(p.prediction.prediction_date).getTime(),
-      roi24h: 2.86,
-      roi3d: 7.14,
-      roi1w: 11.43,
-      roi1m: 17.14,
-    };
-  }) || [];
+  // Use useQuery to handle the async operations for predictions
+  const { data: predictions = [] } = useQuery({
+    queryKey: ['predictions-with-prices', predictionsData],
+    queryFn: async () => {
+      if (!predictionsData) return [];
+      
+      const predictionPromises = predictionsData.map(async p => {
+        const historicalPrice = await fetchHistoricalPrice(
+          p.prediction.crypto,
+          new Date(p.prediction.prediction_date).getTime()
+        );
+        
+        return {
+          crypto: p.prediction.crypto,
+          symbol: p.prediction.crypto,
+          priceAtPrediction: historicalPrice || p.prediction.price_at_prediction,
+          targetPrice: p.prediction.target_price,
+          predictionDate: new Date(p.prediction.prediction_date).getTime(),
+          roi24h: 2.86,
+          roi3d: 7.14,
+          roi1w: 11.43,
+          roi1m: 17.14,
+        };
+      });
+      
+      return Promise.all(predictionPromises);
+    },
+    enabled: !!predictionsData,
+  });
 
   const uniqueCryptos = [...new Set(predictions.map(p => p.crypto))];
   console.log('Unique cryptos to fetch:', uniqueCryptos);

@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 export const API_CONFIG = {
   RAPID_API_KEY: "d51b9a68c9mshdf25f4ca2622a18p1602edjsn81602d153c16",
   RAPID_API_HOST: "crypto-market-prices.p.rapidapi.com",
