@@ -1,7 +1,17 @@
 import ccxt from 'ccxt';
 
-// Initialize Binance exchange (we'll use it as our data source)
-const exchange = new ccxt.binance();
+// Initialize Binance exchange in browser mode
+const exchange = new ccxt.binance({
+  enableRateLimit: true, // Enable built-in rate limiter
+  options: {
+    defaultType: 'spot', // Use spot markets
+  },
+});
+
+// Force 'cors' mode for browser environment
+exchange.headers = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+};
 
 export const formatCryptoSymbol = (code: string | null): string | null => {
   if (!code) return null;

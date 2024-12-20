@@ -19,4 +19,19 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  define: {
+    // This is needed for CCXT to work in browser-only mode
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
+  },
+  build: {
+    rollupOptions: {
+      external: [
+        'http',
+        'https',
+        'http-proxy-agent',
+        'https-proxy-agent',
+        'socks-proxy-agent',
+      ],
+    },
+  },
 }));
