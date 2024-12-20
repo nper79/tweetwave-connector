@@ -18,20 +18,20 @@ export const CryptoPriceTest = () => {
   const formatPrice = (price: number | null) => {
     if (price === null) return 'N/A';
     
-    // For extremely small numbers (less than 0.0001), show all significant digits
+    // For extremely small numbers (less than 0.0001), show more decimal places
     if (price < 0.0001) {
       return `$${price.toFixed(8)}`;
     }
     
-    // For small numbers (less than 0.01), show more decimals
-    if (price < 0.01) {
-      return `$${price.toFixed(8)}`;
+    // For small numbers (less than 1), show more decimals
+    if (price < 1) {
+      return `$${price.toFixed(6)}`;
     }
     
     // For regular numbers, use locale string with appropriate decimals
     return `$${price.toLocaleString(undefined, {
       minimumFractionDigits: 2,
-      maximumFractionDigits: 6
+      maximumFractionDigits: 2
     })}`;
   };
 
@@ -41,7 +41,9 @@ export const CryptoPriceTest = () => {
       <div className="space-y-4">
         {results.map((result, index) => {
           const symbol = TEST_CRYPTOS[index];
-          console.log(`${symbol} price:`, result.data, 'formatted:', result.data ? formatPrice(result.data) : 'N/A');
+          const formattedPrice = formatPrice(result.data);
+          console.log(`${symbol} price:`, result.data, 'formatted:', formattedPrice);
+          
           return (
             <div key={symbol} className="flex justify-between items-center border-b pb-2">
               <span className="font-medium">{symbol}:</span>
@@ -53,7 +55,7 @@ export const CryptoPriceTest = () => {
                 </span>
               ) : (
                 <span className="text-green-600">
-                  {formatPrice(result.data)}
+                  {formattedPrice}
                 </span>
               )}
             </div>
