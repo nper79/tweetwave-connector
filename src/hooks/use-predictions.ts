@@ -23,9 +23,33 @@ const getCurrentPrice = async (crypto: string): Promise<number> => {
   return 50000; // Mock price for testing
 };
 
-// Modified to return true for all tweets
-const isPredictionTweet = (tweet: Tweet) => {
-  return true; // Consider all tweets as predictions for testing
+const isPredictionTweet = (tweet: Tweet): boolean => {
+  if (!tweet.text) return false;
+  
+  const text = tweet.text.toLowerCase();
+  
+  // Keywords indicating a prediction
+  const predictionKeywords = [
+    'prediction', 'predict', 'target', 'expect', 'soon', 'coming',
+    'dip', 'drop', 'fall', 'decline', 'bearish',
+    'pump', 'rise', 'surge', 'bullish', 'moon',
+    'support', 'resistance', 'break'
+  ];
+  
+  // Check for crypto symbols
+  const hasCryptoSymbol = text.includes('$') && /\$[A-Z]{2,}/.test(tweet.text);
+  
+  // Check for prediction keywords
+  const hasPredictionKeyword = predictionKeywords.some(keyword => text.includes(keyword));
+  
+  // Check for technical analysis terms
+  const hasTechnicalAnalysis = text.includes('wedge') || 
+                              text.includes('pattern') || 
+                              text.includes('trend') ||
+                              text.includes('level') ||
+                              text.includes('bottom');
+  
+  return hasCryptoSymbol && (hasPredictionKeyword || hasTechnicalAnalysis);
 };
 
 const parsePredictionFromTweet = (tweet: Tweet) => {

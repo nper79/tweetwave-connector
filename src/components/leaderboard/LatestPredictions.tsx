@@ -5,6 +5,35 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tweet } from "@/types/twitter";
 import { formatDistanceToNow } from "date-fns";
 
+const isPredictionTweet = (tweet: Tweet): boolean => {
+  if (!tweet?.text) return false;
+  
+  const text = tweet.text.toLowerCase();
+  
+  // Keywords indicating a prediction
+  const predictionKeywords = [
+    'prediction', 'predict', 'target', 'expect', 'soon', 'coming',
+    'dip', 'drop', 'fall', 'decline', 'bearish',
+    'pump', 'rise', 'surge', 'bullish', 'moon',
+    'support', 'resistance', 'break'
+  ];
+  
+  // Check for crypto symbols
+  const hasCryptoSymbol = text.includes('$') && /\$[A-Z]{2,}/.test(tweet.text);
+  
+  // Check for prediction keywords
+  const hasPredictionKeyword = predictionKeywords.some(keyword => text.includes(keyword));
+  
+  // Check for technical analysis terms
+  const hasTechnicalAnalysis = text.includes('wedge') || 
+                              text.includes('pattern') || 
+                              text.includes('trend') ||
+                              text.includes('level') ||
+                              text.includes('bottom');
+  
+  return hasCryptoSymbol && (hasPredictionKeyword || hasTechnicalAnalysis);
+};
+
 export const LatestPredictions = () => {
   const { data: tweets, isLoading, error } = useTwitterTimeline("SolbergInvest");
 
@@ -51,10 +80,7 @@ export const LatestPredictions = () => {
     );
   }
 
-  const predictionsFromTweets = tweets?.filter((tweet: Tweet) => 
-    tweet?.text?.toLowerCase().includes('target') || 
-    tweet?.text?.toLowerCase().includes('prediction')
-  ).slice(0, 3);
+  const predictionsFromTweets = tweets?.filter(isPredictionTweet).slice(0, 3);
 
   return (
     <Card className="bg-white dark:bg-gray-800 shadow-sm">
@@ -88,11 +114,6 @@ export const LatestPredictions = () => {
                       {tweet.text}
                     </div>
                     <div className="flex items-center gap-3 mt-2">
-                      {tweet.text?.match(/target:?\s*\$?\d+\.?\d*/i) && (
-                        <span className="text-green-500 text-sm font-medium">
-                          Target: {tweet.text.match(/target:?\s*(\$?\d+\.?\d*)/i)?.[1]}
-                        </span>
-                      )}
                       <span className="text-gray-400 text-sm flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         {formatDistanceToNow(new Date(tweet.created_at), { addSuffix: true })}
