@@ -6,6 +6,7 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -23,7 +24,16 @@ serve(async (req) => {
       console.error('Error fetching from Binance:', response.status, response.statusText);
       const errorText = await response.text();
       console.error('Error details:', errorText);
-      throw new Error('Failed to fetch prices from Binance');
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to fetch prices from Binance',
+          details: errorText 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500
+        }
+      );
     }
 
     const allPrices = await response.json();
