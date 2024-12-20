@@ -58,27 +58,37 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
     );
   }
 
+  // Sort tweets by date (newest first)
+  const sortedTweets = [...tweets].sort((a, b) => 
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+
   const predictionTweets = predictions?.map(p => p.tweet) || [];
-  console.log('Found prediction tweets:', predictionTweets.length);
+  // Sort prediction tweets by date (newest first)
+  const sortedPredictionTweets = [...predictionTweets].sort((a, b) => 
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+  
+  console.log('Found prediction tweets:', sortedPredictionTweets.length);
   
   return (
     <Tabs defaultValue="predictions" className="w-full">
       <TabsList className="grid w-full grid-cols-2 mb-4">
         <TabsTrigger value="predictions" className="flex items-center gap-2">
           <Target className="h-4 w-4" />
-          Predictions ({predictionTweets.length})
+          Predictions ({sortedPredictionTweets.length})
         </TabsTrigger>
         <TabsTrigger value="all">
-          All Tweets ({tweets.length})
+          All Tweets ({sortedTweets.length})
         </TabsTrigger>
       </TabsList>
       <TabsContent value="predictions" className="space-y-4">
-        {predictionTweets.length === 0 ? (
+        {sortedPredictionTweets.length === 0 ? (
           <div className="text-center p-4 border rounded-lg">
             <p className="text-gray-500">No prediction tweets found</p>
           </div>
         ) : (
-          predictionTweets.map(tweet => (
+          sortedPredictionTweets.map(tweet => (
             <TweetCard 
               key={tweet.tweet_id} 
               tweet={tweet} 
@@ -88,11 +98,11 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
         )}
       </TabsContent>
       <TabsContent value="all" className="space-y-4">
-        {tweets.map(tweet => (
+        {sortedTweets.map(tweet => (
           <TweetCard
             key={tweet.tweet_id}
             tweet={tweet}
-            isPrediction={predictionTweets.some(p => p.tweet_id === tweet.tweet_id)}
+            isPrediction={sortedPredictionTweets.some(p => p.tweet_id === tweet.tweet_id)}
           />
         ))}
       </TabsContent>
