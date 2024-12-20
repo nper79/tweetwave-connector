@@ -13,7 +13,7 @@ interface TwitterTimelineProps {
 
 export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps) => {
   const { data: tweets, isLoading, error, refetch } = useTwitterTimeline(username);
-  const { data: predictions } = usePredictions(tweets);
+  const { data: predictions } = usePredictions(tweets || []);
 
   if (isLoading) {
     return (
