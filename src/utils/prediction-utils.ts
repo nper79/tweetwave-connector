@@ -5,13 +5,14 @@ const PREDICTION_KEYWORDS = [
   'prediction', 'predict', 'target', 'expect', 'soon', 'coming',
   'dip', 'drop', 'fall', 'decline', 'bearish',
   'pump', 'rise', 'surge', 'bullish', 'moon',
-  'support', 'resistance', 'break'
+  'support', 'resistance', 'break', 'buy', 'sell'
 ] as const;
 
 const TECHNICAL_ANALYSIS_TERMS = [
   'wedge', 'pattern', 'trend', 'level', 'bottom',
   'fibonacci', 'fib', 'retrace', 'channel', 'triangle',
-  'head and shoulders', 'double top', 'double bottom'
+  'head and shoulders', 'double top', 'double bottom',
+  'support', 'resistance', 'breakout'
 ] as const;
 
 export const hasCryptoSymbol = (text: string): boolean => {
@@ -41,18 +42,21 @@ export const extractCryptoSymbol = (text: string): string => {
 };
 
 export const extractTargetPrice = (text: string): number | null => {
-  // Look for price patterns like $50k, $50K, or $50,000
   const pricePatterns = [
-    /\$(\d+(?:,\d{3})*(?:\.\d+)?)[kK]/, // Matches $50k or $50K
-    /\$(\d+(?:,\d{3})*(?:\.\d+)?)/ // Matches regular dollar amounts
+    /target:?\s*\$?(\d+(?:,\d{3})*(?:\.\d+)?)[kK]?/i,
+    /price:?\s*\$?(\d+(?:,\d{3})*(?:\.\d+)?)[kK]?/i,
+    /\$(\d+(?:,\d{3})*(?:\.\d+)?)[kK]?/
   ];
 
   for (const pattern of pricePatterns) {
     const match = text.match(pattern);
     if (match) {
-      const value = parseFloat(match[1].replace(/,/g, ''));
+      let value = parseFloat(match[1].replace(/,/g, ''));
       // If the price ends with 'k' or 'K', multiply by 1000
-      return match[0].toLowerCase().endsWith('k') ? value * 1000 : value;
+      if (match[0].toLowerCase().includes('k')) {
+        value *= 1000;
+      }
+      return value;
     }
   }
 

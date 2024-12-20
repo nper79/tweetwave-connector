@@ -13,6 +13,11 @@ const parsePredictionFromTweet = (tweet: Tweet) => {
   const crypto = extractCryptoSymbol(tweet.text);
   const targetPrice = extractTargetPrice(tweet.text);
   
+  if (!crypto || !targetPrice) {
+    console.log('Missing crypto or target price for tweet:', tweet.text);
+    return null;
+  }
+  
   return {
     crypto,
     price_at_prediction: 50000, // Mock price for testing
@@ -63,16 +68,16 @@ export const usePredictions = (tweets: Tweet[] = []) => {
       const predictions = [];
       for (const tweet of predictionTweets) {
         try {
-          await storePredictionMutation.mutateAsync(tweet);
           const prediction = parsePredictionFromTweet(tweet);
           if (prediction) {
+            await storePredictionMutation.mutateAsync(tweet);
             predictions.push({
               prediction,
               tweet
             });
           }
         } catch (error) {
-          console.error('Error storing prediction:', error);
+          console.error('Error processing prediction:', error);
         }
       }
 

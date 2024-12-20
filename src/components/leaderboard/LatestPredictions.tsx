@@ -52,8 +52,13 @@ export const LatestPredictions = () => {
     );
   }
 
-  const predictionsFromTweets = tweets?.filter(tweet => tweet && isPredictionTweet(tweet)).slice(0, 3);
-  console.log('Filtered predictions:', predictionsFromTweets);
+  const validTweets = tweets?.filter((tweet): tweet is Tweet => Boolean(tweet));
+  const predictionsFromTweets = validTweets
+    ?.filter(isPredictionTweet)
+    .slice(0, 3);
+
+  console.log('Valid tweets:', validTweets?.length);
+  console.log('Filtered predictions:', predictionsFromTweets?.length);
 
   return (
     <Card className="bg-white dark:bg-gray-800 shadow-sm">
@@ -71,38 +76,36 @@ export const LatestPredictions = () => {
           </div>
         ) : (
           predictionsFromTweets.map((tweet: Tweet) => (
-            tweet && (
-              <div key={tweet.tweet_id} className="p-3 rounded-md bg-gray-50 dark:bg-gray-900">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="font-semibold flex items-center gap-2">
-                      {tweet.author?.screen_name || "Unknown Author"}
-                      {tweet.text?.toLowerCase().includes('$') && (
-                        <span className="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-100 rounded-md">
-                          {tweet.text.match(/\$[A-Z]+/)?.[0] || '$CRYPTO'}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-                      {tweet.text}
-                    </div>
-                    <div className="flex items-center gap-3 mt-2">
-                      <span className="text-gray-400 text-sm flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {formatDistanceToNow(new Date(tweet.created_at), { addSuffix: true })}
+            <div key={tweet.tweet_id} className="p-3 rounded-md bg-gray-50 dark:bg-gray-900">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="font-semibold flex items-center gap-2">
+                    {tweet.author?.screen_name || "Unknown Author"}
+                    {tweet.text?.toLowerCase().includes('$') && (
+                      <span className="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-100 rounded-md">
+                        {tweet.text.match(/\$[A-Z]+/)?.[0] || '$CRYPTO'}
                       </span>
-                    </div>
+                    )}
                   </div>
-                  <a 
-                    href={`https://twitter.com/${tweet.author?.screen_name}/status/${tweet.tweet_id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <ExternalLink className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer ml-2 flex-shrink-0" />
-                  </a>
+                  <div className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+                    {tweet.text}
+                  </div>
+                  <div className="flex items-center gap-3 mt-2">
+                    <span className="text-gray-400 text-sm flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {formatDistanceToNow(new Date(tweet.created_at), { addSuffix: true })}
+                    </span>
+                  </div>
                 </div>
+                <a 
+                  href={`https://twitter.com/${tweet.author?.screen_name}/status/${tweet.tweet_id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ExternalLink className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer ml-2 flex-shrink-0" />
+                </a>
               </div>
-            )
+            </div>
           ))
         )}
       </CardContent>
