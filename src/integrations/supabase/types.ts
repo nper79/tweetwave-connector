@@ -9,6 +9,30 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      historical_prices: {
+        Row: {
+          created_at: string | null
+          id: string
+          price: number
+          symbol: string
+          timestamp: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          price: number
+          symbol: string
+          timestamp: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          price?: number
+          symbol?: string
+          timestamp?: string
+        }
+        Relationships: []
+      }
       predictions: {
         Row: {
           crypto: string
