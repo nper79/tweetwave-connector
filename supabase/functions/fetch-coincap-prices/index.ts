@@ -14,7 +14,7 @@ serve(async (req) => {
   try {
     console.log('Starting crypto price fetch from Binance API...');
     
-    const cryptos = ['BTC', 'ETH', 'SOL', 'XRP'];
+    const cryptos = ['BTC', 'ETH', 'SOL', 'XRP', 'PEPE', 'FLOKI'];
     const prices = [];
 
     // Fetch all prices at once from Binance

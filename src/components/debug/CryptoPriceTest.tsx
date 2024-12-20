@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchCryptoPrice } from "@/utils/crypto-utils";
 import { Card } from "@/components/ui/card";
 
-const TEST_CRYPTOS = ['BTC', 'ETH', 'SOL', 'XRP'];
+const TEST_CRYPTOS = ['BTC', 'ETH', 'SOL', 'XRP', 'PEPE', 'FLOKI'];
 
 export const CryptoPriceTest = () => {
   const queries = TEST_CRYPTOS.map(symbol => ({
