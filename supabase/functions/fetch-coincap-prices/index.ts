@@ -36,22 +36,16 @@ serve(async (req) => {
     const allPrices = await response.json();
     console.log('Successfully fetched all prices from Binance');
 
-    // Create a mapping for the symbols we want to track
-    const symbolMapping = {
-      'BTC': 'BTCUSDT',
-      'ETH': 'ETHUSDT',
-      'SOL': 'SOLUSDT',
-      'XRP': 'XRPUSDT',
-      'PEPE': 'PEPEUSDT',
-      'FLOKI': 'FLOKIUSDT'
-    };
+    // Get the requested symbols from the request body
+    const { symbols = [] } = await req.json();
+    console.log('Requested symbols:', symbols);
 
     const prices = [];
 
-    for (const [symbol, binanceSymbol] of Object.entries(symbolMapping)) {
-      console.log(`Processing ${symbol} (${binanceSymbol}) price...`);
+    for (const symbol of symbols) {
+      console.log(`Processing ${symbol} price...`);
       
-      const priceData = allPrices.find(p => p.symbol === binanceSymbol);
+      const priceData = allPrices.find(p => p.symbol === symbol);
       
       if (priceData) {
         const price = parseFloat(priceData.price);
@@ -59,12 +53,12 @@ serve(async (req) => {
         
         // Store in our format
         prices.push({
-          symbol,
+          symbol: symbol.replace(/USDT$/, ''), // Remove USDT for storage
           price,
           timestamp: new Date().toISOString()
         });
       } else {
-        console.log(`No price found for ${symbol} (${binanceSymbol})`);
+        console.log(`No price found for ${symbol}`);
       }
     }
 

@@ -3,9 +3,9 @@ import { fetchPriceFromDB } from "./price-utils";
 
 export const formatCryptoSymbol = (code: string | null): string | null => {
   if (!code) return null;
-  // Remove $ and get clean code without USDT
-  const cleanCode = code.replace('$', '').replace('USDT', '').toUpperCase();
-  return `${cleanCode}USDT`; // Always append USDT for API compatibility
+  // Remove $ and any existing USDT, then append USDT
+  const cleanCode = code.replace('$', '').replace(/USDT$/i, '').toUpperCase();
+  return `${cleanCode}USDT`;
 };
 
 export const fetchHistoricalPrice = async (symbol: string, timestamp: number): Promise<number | null> => {
@@ -25,9 +25,10 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
   if (!symbol) return null;
   
   try {
-    console.log(`Fetching current price for ${symbol}...`);
     const formattedSymbol = formatCryptoSymbol(symbol);
     if (!formattedSymbol) return null;
+    
+    console.log(`Fetching current price for ${formattedSymbol}...`);
     
     // Try to get the latest price from the database
     const price = await fetchPriceFromDB(formattedSymbol);
