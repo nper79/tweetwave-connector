@@ -1,12 +1,10 @@
-import { Tweet } from "@/types/twitter";
 import { useTwitterTimeline } from "@/hooks/use-twitter";
 import { usePredictions } from "@/hooks/use-predictions";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Target } from "lucide-react";
+import { Target, RotateCw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TweetCard } from "./TweetCard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ReloadIcon } from "@radix-ui/react-icons";
 import { Button } from "@/components/ui/button";
 
 interface TwitterTimelineProps {
@@ -42,7 +40,7 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
             onClick={() => refetch()}
             className="ml-2"
           >
-            <ReloadIcon className="mr-2 h-4 w-4" />
+            <RotateCw className="mr-2 h-4 w-4" />
             Retry
           </Button>
         </AlertDescription>
