@@ -4,7 +4,7 @@ import { fetchPriceFromDB } from "./price-utils";
 export const formatCryptoSymbol = (code: string | null): string | null => {
   if (!code) return null;
   // Remove $ and any existing USDT, then append USDT
-  const cleanCode = code.replace('$', '').replace(/USDT$/i, '').toUpperCase();
+  const cleanCode = code.replace(/^\$/, '').replace(/USDT$/i, '').toUpperCase();
   return `${cleanCode}USDT`;
 };
 

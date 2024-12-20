@@ -40,7 +40,7 @@ export const extractCryptoSymbol = (text: string): string => {
   const match = text.match(/\$[A-Z]{2,}/);
   if (!match) return 'BTC';
   // Just remove the $ and return the clean symbol
-  return match[0].substring(1);
+  return match[0].replace(/^\$/, '');
 };
 
 export const extractTargetPrice = (text: string): number | null => {
