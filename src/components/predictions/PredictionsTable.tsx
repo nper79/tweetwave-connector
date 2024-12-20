@@ -15,7 +15,7 @@ const fetchCryptoPrice = async (symbol: string | null) => {
     console.log(`Fetching price for symbol: ${formattedSymbol}`);
     
     const response = await fetch(
-      `https://${API_CONFIG.RAPID_API_HOST}/v1/cryptoprice?symbol=${formattedSymbol}`,
+      `https://${API_CONFIG.RAPID_API_HOST}/tokens/${formattedSymbol}?base=USDT`,
       {
         method: 'GET',
         headers: {
@@ -31,7 +31,7 @@ const fetchCryptoPrice = async (symbol: string | null) => {
     }
 
     const data = await response.json();
-    return data.price;
+    return data.price || null;
   } catch (error) {
     console.error(`Failed to fetch price for ${symbol}:`, error);
     return null;

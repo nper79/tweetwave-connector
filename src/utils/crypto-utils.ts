@@ -1,6 +1,6 @@
 export const API_CONFIG = {
   RAPID_API_KEY: "d51b9a68c9mshdf25f4ca2622a18p1602edjsn81602d153c16",
-  RAPID_API_HOST: "crypto-price-by-api-ninjas.p.rapidapi.com",
+  RAPID_API_HOST: "crypto-market-prices.p.rapidapi.com",
 };
 
 export const formatCryptoSymbol = (code: string | null): string | null => {
@@ -11,13 +11,12 @@ export const formatCryptoSymbol = (code: string | null): string | null => {
   
   // Map common symbols to their API-compatible format
   const symbolMap: { [key: string]: string } = {
-    'BTC': 'BTCUSD',
-    'ETH': 'ETHUSD',
-    'SOL': 'SOLUSD',
+    'BTC': 'BTC',
+    'ETH': 'ETH',
+    'SOL': 'SOL',
     'ORAI': null, // Unsupported token
     // Add more mappings as needed
   };
 
-  // Return mapped symbol or default format
-  return symbolMap[cleanCode] || `${cleanCode}USD`;
+  return symbolMap[cleanCode] || cleanCode;
 };
