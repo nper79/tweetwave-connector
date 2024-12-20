@@ -17,13 +17,10 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
   const { data: predictions } = usePredictions(tweets || []);
 
   useEffect(() => {
-    let mounted = true;
-
-    const initializeData = async () => {
+    const fetchData = async () => {
       try {
-        // Only refetch if we don't have data and we're not currently loading
-        if (!isLoading && !tweets && mounted) {
-          console.log('Initializing data fetch for:', username);
+        if (!tweets && !isLoading) {
+          console.log('Fetching tweets for:', username);
           await refetch();
         }
       } catch (error) {
@@ -31,13 +28,8 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
       }
     };
 
-    initializeData();
-
-    // Cleanup function
-    return () => {
-      mounted = false;
-    };
-  }, [tweets, isLoading, refetch, username]);
+    fetchData();
+  }, [username, refetch, tweets, isLoading]);
 
   if (isLoading) {
     return (
@@ -82,27 +74,26 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
     );
   }
 
-  // Ensure we have arrays to work with and create copies for sorting
-  const tweetsToSort = Array.isArray(tweets) ? [...tweets].filter(tweet => tweet && tweet.created_at) : [];
-  const predictionTweets = predictions?.map(p => p.tweet).filter(Boolean) || [];
+  // Filter out invalid tweets first
+  const validTweets = tweets.filter(tweet => tweet && tweet.created_at);
   
-  // Sort tweets by date (newest first)
-  const sortedTweets = tweetsToSort.sort((a, b) => {
-    if (!a?.created_at || !b?.created_at) return 0;
+  // Create a copy for sorting
+  const sortedTweets = [...validTweets].sort((a, b) => {
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
-  // Sort prediction tweets by date (newest first)
-  const sortedPredictionTweets = predictionTweets
-    .filter(tweet => tweet && tweet.created_at)
-    .sort((a, b) => {
-      if (!a?.created_at || !b?.created_at) return 0;
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    });
+  // Filter and sort prediction tweets
+  const validPredictionTweets = predictions
+    ?.map(p => p.tweet)
+    .filter(tweet => tweet && tweet.created_at) || [];
   
-  console.log('Original tweets length:', tweets.length);
-  console.log('Sorted tweets length:', sortedTweets.length);
-  console.log('Found prediction tweets:', sortedPredictionTweets.length);
+  const sortedPredictionTweets = [...validPredictionTweets].sort((a, b) => {
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
+  console.log('Valid tweets count:', validTweets.length);
+  console.log('Sorted tweets count:', sortedTweets.length);
+  console.log('Prediction tweets count:', sortedPredictionTweets.length);
   
   return (
     <Tabs defaultValue="predictions" className="w-full">
