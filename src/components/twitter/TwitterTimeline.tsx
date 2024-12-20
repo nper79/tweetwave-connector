@@ -5,13 +5,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Target } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TweetCard } from "./TweetCard";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ReloadIcon } from "@radix-ui/react-icons";
+import { Button } from "@/components/ui/button";
 
 interface TwitterTimelineProps {
   username?: string;
 }
 
 export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps) => {
-  const { data: tweets, isLoading, error } = useTwitterTimeline(username);
+  const { data: tweets, isLoading, error, refetch } = useTwitterTimeline(username);
   const { data: predictions } = usePredictions(tweets);
 
   if (isLoading) {
@@ -30,17 +33,30 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
   if (error) {
     console.error('Twitter timeline error:', error);
     return (
-      <div className="text-center p-4">
-        <p className="text-red-500">Failed to load tweets: {error.message}</p>
-      </div>
+      <Alert variant="destructive" className="mb-4">
+        <AlertDescription className="flex items-center justify-between">
+          <span>Failed to load tweets: {error.message}</span>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => refetch()}
+            className="ml-2"
+          >
+            <ReloadIcon className="mr-2 h-4 w-4" />
+            Retry
+          </Button>
+        </AlertDescription>
+      </Alert>
     );
   }
 
   if (!tweets || tweets.length === 0) {
     return (
-      <div className="text-center p-4">
-        <p className="text-gray-500">No tweets found for @{username}</p>
-      </div>
+      <Alert className="mb-4">
+        <AlertDescription>
+          No tweets found for @{username}
+        </AlertDescription>
+      </Alert>
     );
   }
 

@@ -10,6 +10,8 @@ export const useTwitterTimeline = (screenname: string = "elonmusk") => {
     queryKey: ["twitter-timeline", screenname],
     queryFn: async (): Promise<Tweet[]> => {
       try {
+        console.log("Fetching tweets for:", screenname);
+        
         const options = {
           method: 'GET',
           headers: {
@@ -24,25 +26,30 @@ export const useTwitterTimeline = (screenname: string = "elonmusk") => {
         );
 
         if (!response.ok) {
-          throw new Error("Failed to fetch tweets");
+          const errorText = await response.text();
+          console.error("Twitter API Error Response:", errorText);
+          throw new Error(`Failed to fetch tweets: ${response.status} ${response.statusText}`);
         }
 
         const data: TwitterResponse = await response.json();
-        console.log("Raw API response:", data);
+        console.log("Raw Twitter API response:", data);
 
         if (!data.timeline || !Array.isArray(data.timeline)) {
-          console.error("Unexpected API response format:", data);
-          return [];
+          console.error("Unexpected Twitter API response format:", data);
+          throw new Error("Invalid response format from Twitter API");
         }
 
+        console.log("Successfully fetched tweets:", data.timeline.length);
         return data.timeline;
       } catch (error) {
         console.error("Twitter API Error:", error);
-        toast.error("Failed to fetch tweets");
+        toast.error("Failed to fetch tweets. Please try again later.");
         throw error;
       }
     },
-    retry: 1,
-    refetchOnWindowFocus: false
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    refetchOnWindowFocus: false,
+    staleTime: 300000 // 5 minutes
   });
 };
