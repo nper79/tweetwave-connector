@@ -20,6 +20,32 @@ interface CryptoApiResponse {
   };
 }
 
+// Mock data for development
+const MOCK_PREDICTIONS = [
+  {
+    crypto: "BTC",
+    symbol: "BTC",
+    priceAtPrediction: 42000,
+    targetPrice: 100000,
+    predictionDate: new Date().getTime(),
+    roi24h: 2.86,
+    roi3d: 7.14,
+    roi1w: 11.43,
+    roi1m: 17.14,
+  },
+  {
+    crypto: "ETH",
+    symbol: "ETH",
+    priceAtPrediction: 2200,
+    targetPrice: 4000,
+    predictionDate: new Date().getTime(),
+    roi24h: 1.56,
+    roi3d: 4.23,
+    roi1w: 8.91,
+    roi1m: 15.67,
+  }
+];
+
 const fetchCryptoPrice = async (symbol: string | null) => {
   if (!symbol) return null;
   
@@ -68,8 +94,20 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
   const { data: tweets, isLoading: tweetsLoading } = useTwitterTimeline(username);
   const { data: predictionsData, isLoading: predictionsLoading } = usePredictions(tweets || []);
 
-  // Get unique crypto symbols from predictions
-  const uniqueCryptos = [...new Set(predictionsData?.map(p => p.prediction.crypto) || [])];
+  // Get unique crypto symbols from predictions or mock data if no predictions
+  const predictions = predictionsData?.map(p => ({
+    crypto: p.prediction.crypto,
+    symbol: p.prediction.crypto,
+    priceAtPrediction: p.prediction.price_at_prediction,
+    targetPrice: p.prediction.target_price,
+    predictionDate: new Date(p.prediction.prediction_date).getTime(),
+    roi24h: 2.86,
+    roi3d: 7.14,
+    roi1w: 11.43,
+    roi1m: 17.14,
+  })) || MOCK_PREDICTIONS;
+
+  const uniqueCryptos = [...new Set(predictions.map(p => p.crypto))];
   console.log('Unique cryptos to fetch:', uniqueCryptos);
   
   // Fetch prices for all unique cryptos
@@ -77,10 +115,10 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
     queries: uniqueCryptos.map(crypto => ({
       queryKey: ['crypto-price', crypto],
       queryFn: () => fetchCryptoPrice(crypto),
-      refetchInterval: 30000, // Refresh every 30 seconds
+      refetchInterval: 30000,
       retry: 2,
       retryDelay: 1000,
-      staleTime: 20000, // Consider data stale after 20 seconds
+      staleTime: 20000,
     })),
   });
 
@@ -113,18 +151,6 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
       </div>
     );
   }
-
-  const predictions = predictionsData?.map(p => ({
-    crypto: p.prediction.crypto,
-    symbol: p.prediction.crypto,
-    priceAtPrediction: p.prediction.price_at_prediction,
-    targetPrice: p.prediction.target_price,
-    predictionDate: new Date(p.prediction.prediction_date).getTime(),
-    roi24h: 2.86, // Mock ROI data for now
-    roi3d: 7.14,
-    roi1w: 11.43,
-    roi1m: 17.14,
-  })) || [];
 
   return (
     <div className="overflow-x-auto">
