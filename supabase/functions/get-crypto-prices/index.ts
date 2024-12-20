@@ -64,20 +64,15 @@ serve(async (req) => {
 
     // If we don't have recent data, fetch from LiveCoinWatch
     console.log('No recent data found, fetching from LiveCoinWatch API...')
-    const apiKey = await supabase.rpc('get_secret_value', { secret_name: 'LIVECOINWATCH_API_KEY' })
     
+    // Get API key directly from environment
+    const apiKey = Deno.env.get('LIVECOINWATCH_API_KEY')
     if (!apiKey) {
-      console.error('LiveCoinWatch API key not found in secrets')
+      console.error('LiveCoinWatch API key not found')
       throw new Error('LiveCoinWatch API key not found')
     }
 
-    // Validate API key format (basic check)
-    if (typeof apiKey !== 'string' || apiKey.length < 10) {
-      console.error('Invalid LiveCoinWatch API key format')
-      throw new Error('Invalid LiveCoinWatch API key format')
-    }
-
-    console.log('Successfully retrieved API key from secrets')
+    console.log('Successfully retrieved API key')
 
     const liveCoinWatchResponse = await fetch('https://api.livecoinwatch.com/coins/single/history', {
       method: 'POST',
