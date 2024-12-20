@@ -34,8 +34,6 @@ export const formatPrice = (price: number | null | undefined) => {
 };
 
 export const fetchPriceFromDB = async (symbol: string, timestamp?: number) => {
-  console.log(`Fetching price for ${symbol} ${timestamp ? 'at ' + new Date(timestamp).toISOString() : '(latest)'}`);
-  
   try {
     let query = supabase
       .from('historical_prices')
@@ -64,11 +62,9 @@ export const fetchPriceFromDB = async (symbol: string, timestamp?: number) => {
     }
 
     if (prices && prices.length > 0) {
-      console.log(`Found price for ${symbol}:`, prices[0].price);
       return prices[0].price;
     }
 
-    console.log(`No price found for ${symbol}`);
     return null;
   } catch (error) {
     console.error('Error fetching price from DB:', error);

@@ -10,7 +10,6 @@ export const formatCryptoSymbol = (code: string | null): string | null => {
 
 export const fetchHistoricalPrice = async (symbol: string, timestamp: number): Promise<number | null> => {
   try {
-    console.log(`Fetching historical price for ${symbol} at ${new Date(timestamp).toISOString()}`);
     const formattedSymbol = formatCryptoSymbol(symbol);
     if (!formattedSymbol) return null;
     
@@ -28,14 +27,10 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
     const formattedSymbol = formatCryptoSymbol(symbol);
     if (!formattedSymbol) return null;
     
-    console.log(`Fetching current price for ${formattedSymbol}...`);
-    
     // Try to get the latest price from the database
     const price = await fetchPriceFromDB(formattedSymbol);
-    console.log(`Price from DB for ${formattedSymbol}:`, price);
     
     // Always fetch fresh data to ensure we have the latest prices
-    console.log(`Fetching fresh price for ${formattedSymbol}...`);
     const { data, error: invocationError } = await supabase.functions.invoke('fetch-coincap-prices', {
       body: { symbols: [symbol] }
     });
@@ -47,8 +42,13 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
 
     // Get the latest price after fetching fresh data
     const updatedPrice = await fetchPriceFromDB(formattedSymbol);
-    console.log(`Updated price for ${formattedSymbol}:`, updatedPrice);
-    return updatedPrice || price; // Return the updated price or fall back to the cached price
+    
+    // Only log if we still can't get a price after trying both methods
+    if (!updatedPrice && !price) {
+      console.warn(`No price available for ${symbol} after multiple attempts`);
+    }
+    
+    return updatedPrice || price;
   } catch (error) {
     console.error(`Failed to fetch price for ${symbol}:`, error);
     return null;
