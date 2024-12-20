@@ -16,11 +16,13 @@ export const useTwitterTimeline = (screenname: string = "elonmusk") => {
 
         if (error) {
           console.error("Edge Function Error:", error);
+          toast.error("Failed to fetch tweets. Please try again later.");
           throw error;
         }
 
-        if (!data.timeline || !Array.isArray(data.timeline)) {
+        if (!data || !data.timeline || !Array.isArray(data.timeline)) {
           console.error("Unexpected Twitter API response format:", data);
+          toast.error("Invalid response format from Twitter API");
           throw new Error("Invalid response format from Twitter API");
         }
 
