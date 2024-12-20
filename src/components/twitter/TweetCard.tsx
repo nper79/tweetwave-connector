@@ -14,8 +14,8 @@ export const TweetCard = ({ tweet, isPrediction }: TweetCardProps) => {
 
   return (
     <div
-      className={`p-4 border rounded-lg hover:border-blue-400 transition-colors bg-white shadow-sm ${
-        isPrediction ? 'border-green-400 bg-green-50' : ''
+      className={`p-4 border rounded-lg hover:border-blue-400 transition-colors bg-white dark:bg-gray-800 dark:border-gray-700 shadow-sm ${
+        isPrediction ? 'border-green-400 bg-green-50 dark:bg-green-900/20' : ''
       }`}
     >
       <div className="flex items-start space-x-3 mb-2">
@@ -27,11 +27,11 @@ export const TweetCard = ({ tweet, isPrediction }: TweetCardProps) => {
           />
         )}
         <div className="flex-1">
-          <p className="font-semibold">{tweet.author.name || "Unknown Author"}</p>
-          <p className="text-gray-500">@{tweet.author.screen_name}</p>
+          <p className="font-semibold dark:text-gray-100">{tweet.author.name || "Unknown Author"}</p>
+          <p className="text-gray-500 dark:text-gray-400">@{tweet.author.screen_name}</p>
         </div>
         {isPrediction && (
-          <div className="flex items-center gap-2 text-green-600 text-sm font-medium">
+          <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm font-medium">
             <span>Prediction</span>
           </div>
         )}
@@ -39,7 +39,7 @@ export const TweetCard = ({ tweet, isPrediction }: TweetCardProps) => {
       
       <div className="flex gap-4 mb-4">
         <div className="flex-1">
-          <p className="text-gray-900 whitespace-pre-wrap">{tweet.text}</p>
+          <p className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">{tweet.text}</p>
         </div>
         
         {hasMedia && (
@@ -64,7 +64,7 @@ export const TweetCard = ({ tweet, isPrediction }: TweetCardProps) => {
         )}
       </div>
 
-      <div className="flex items-center justify-between text-sm text-gray-500 border-t pt-4">
+      <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 border-t dark:border-gray-700 pt-4">
         <div className="flex items-center space-x-2">
           <MessageCircle className="h-4 w-4" />
           <span>{tweet.replies || 0}</span>

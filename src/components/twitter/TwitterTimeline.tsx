@@ -39,9 +39,9 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
     return (
       <div className="space-y-4">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="p-4 border rounded-lg space-y-3">
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
+          <div key={i} className="p-4 border rounded-lg space-y-3 dark:border-gray-700">
+            <Skeleton className="h-4 w-3/4 dark:bg-gray-700" />
+            <Skeleton className="h-4 w-1/2 dark:bg-gray-700" />
           </div>
         ))}
       </div>
@@ -104,7 +104,7 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
   
   return (
     <Tabs defaultValue="predictions" className="w-full">
-      <TabsList className="grid w-full grid-cols-2 mb-4">
+      <TabsList className="grid w-full grid-cols-2 mb-4 dark:bg-gray-800">
         <TabsTrigger value="predictions" className="flex items-center gap-2">
           <Target className="h-4 w-4" />
           Predictions ({sortedPredictionTweets.length})
@@ -115,8 +115,8 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
       </TabsList>
       <TabsContent value="predictions" className="space-y-4">
         {sortedPredictionTweets.length === 0 ? (
-          <div className="text-center p-4 border rounded-lg">
-            <p className="text-gray-500">No prediction tweets found</p>
+          <div className="text-center p-4 border rounded-lg dark:border-gray-700 dark:text-gray-400">
+            <p className="text-gray-500 dark:text-gray-400">No prediction tweets found</p>
           </div>
         ) : (
           sortedPredictionTweets.map(tweet => (
