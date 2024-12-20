@@ -20,12 +20,18 @@ interface PredictionRowProps {
 
 export const PredictionRow = ({ prediction }: PredictionRowProps) => {
   const { data: currentPrice, isLoading, isError } = useQuery({
-    queryKey: ['crypto-price', prediction.symbol],
-    queryFn: () => fetchCryptoPrice(prediction.symbol),
+    queryKey: ['crypto-price', prediction.crypto],
+    queryFn: () => fetchCryptoPrice(prediction.crypto),
     refetchInterval: 30000,
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     staleTime: 20000,
+  });
+
+  console.log(`PredictionRow - ${prediction.crypto}:`, {
+    currentPrice,
+    isLoading,
+    isError
   });
 
   if (isLoading) {

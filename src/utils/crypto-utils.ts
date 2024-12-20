@@ -4,7 +4,7 @@ import { fetchPriceFromDB } from "./price-utils";
 export const formatCryptoSymbol = (code: string | null): string | null => {
   if (!code) return null;
   const cleanCode = code.replace('$', '').toUpperCase();
-  return `${cleanCode}USDT`; // Always append USDT to match Binance format
+  return cleanCode; // Don't append USDT here, let the API handle it
 };
 
 export const fetchHistoricalPrice = async (symbol: string, timestamp: number): Promise<number | null> => {
@@ -25,6 +25,7 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
     
     // Try to get the latest price from the database
     const price = await fetchPriceFromDB(symbol);
+    console.log(`Price from DB for ${symbol}:`, price);
     if (price !== null) return price;
 
     // If we don't have a recent price, fetch fresh data
@@ -39,7 +40,9 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
     }
 
     // Get the latest price after fetching fresh data
-    return await fetchPriceFromDB(symbol);
+    const updatedPrice = await fetchPriceFromDB(symbol);
+    console.log(`Updated price for ${symbol}:`, updatedPrice);
+    return updatedPrice;
   } catch (error) {
     console.error(`Failed to fetch price for ${symbol}:`, error);
     return null;
