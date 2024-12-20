@@ -21,16 +21,7 @@ serve(async (req) => {
       );
     }
 
-    // Try Binance first
-    const binanceResponse = await fetch('https://api.binance.com/api/v3/ticker/price');
-    if (!binanceResponse.ok) {
-      throw new Error(`Binance API error: ${binanceResponse.statusText}`);
-    }
-
-    const binancePrices = await binanceResponse.json();
-    console.log('Successfully fetched Binance prices');
-
-    // Create Supabase client for storing prices
+    // Create Supabase client
     const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -40,17 +31,58 @@ serve(async (req) => {
     const timestamp = new Date().toISOString();
     const prices = [];
 
+    // Try multiple sources for each symbol
     for (const symbol of symbols) {
       console.log(`Processing ${symbol}...`);
-      
-      // Try to find price on Binance
-      const searchSymbol = `${symbol}USDT`;
-      const binancePrice = binancePrices.find(p => p.symbol === searchSymbol);
-      
-      if (binancePrice) {
-        const price = parseFloat(binancePrice.price);
-        console.log(`Found Binance price for ${symbol}:`, price);
-        
+      let price = null;
+
+      // 1. Try Binance first
+      try {
+        const binanceResponse = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}USDT`);
+        if (binanceResponse.ok) {
+          const binanceData = await binanceResponse.json();
+          if (binanceData.price) {
+            price = parseFloat(binanceData.price);
+            console.log(`Found Binance price for ${symbol}:`, price);
+          }
+        }
+      } catch (error) {
+        console.error(`Binance error for ${symbol}:`, error);
+      }
+
+      // 2. Try CoinGecko if Binance fails
+      if (!price) {
+        try {
+          const geckoResponse = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${symbol.toLowerCase()}&vs_currencies=usd`);
+          if (geckoResponse.ok) {
+            const geckoData = await geckoResponse.json();
+            if (geckoData[symbol.toLowerCase()]?.usd) {
+              price = geckoData[symbol.toLowerCase()].usd;
+              console.log(`Found CoinGecko price for ${symbol}:`, price);
+            }
+          }
+        } catch (error) {
+          console.error(`CoinGecko error for ${symbol}:`, error);
+        }
+      }
+
+      // 3. Try CoinCap as last resort
+      if (!price) {
+        try {
+          const coincapResponse = await fetch(`https://api.coincap.io/v2/assets/${symbol.toLowerCase()}`);
+          if (coincapResponse.ok) {
+            const coincapData = await coincapResponse.json();
+            if (coincapData.data?.priceUsd) {
+              price = parseFloat(coincapData.data.priceUsd);
+              console.log(`Found CoinCap price for ${symbol}:`, price);
+            }
+          }
+        } catch (error) {
+          console.error(`CoinCap error for ${symbol}:`, error);
+        }
+      }
+
+      if (price) {
         prices.push({
           symbol,
           price,
@@ -68,43 +100,11 @@ serve(async (req) => {
 
         if (insertError) {
           console.error(`Error storing price for ${symbol}:`, insertError);
+        } else {
+          console.log(`Successfully stored price for ${symbol}`);
         }
       } else {
-        console.log(`No Binance price found for ${symbol}, trying CoinCap...`);
-        
-        // Try CoinCap as fallback
-        try {
-          const coinCapResponse = await fetch(`https://api.coincap.io/v2/assets/${symbol.toLowerCase()}`);
-          if (coinCapResponse.ok) {
-            const coinCapData = await coinCapResponse.json();
-            const price = parseFloat(coinCapData.data.priceUsd);
-            
-            if (price) {
-              console.log(`Found CoinCap price for ${symbol}:`, price);
-              
-              prices.push({
-                symbol,
-                price,
-                timestamp
-              });
-
-              // Store price in database
-              const { error: insertError } = await supabase
-                .from('historical_prices')
-                .insert({
-                  symbol,
-                  price,
-                  timestamp
-                });
-
-              if (insertError) {
-                console.error(`Error storing price for ${symbol}:`, insertError);
-              }
-            }
-          }
-        } catch (error) {
-          console.error(`Error fetching CoinCap price for ${symbol}:`, error);
-        }
+        console.log(`No price found for ${symbol} from any source`);
       }
     }
 

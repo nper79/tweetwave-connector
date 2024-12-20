@@ -4,7 +4,7 @@ import { fetchPriceFromDB } from "./price-utils";
 export const formatCryptoSymbol = (code: string | null): string | null => {
   if (!code) return null;
   const cleanCode = code.replace(/^\$/, '').replace(/USDT$/i, '').toUpperCase();
-  return `${cleanCode}USDT`;
+  return cleanCode;
 };
 
 export const fetchHistoricalPrice = async (symbol: string, timestamp: number): Promise<number | null> => {
@@ -12,19 +12,40 @@ export const fetchHistoricalPrice = async (symbol: string, timestamp: number): P
     const formattedSymbol = formatCryptoSymbol(symbol);
     if (!formattedSymbol) return null;
     
-    // First try to get from DB
-    const dbPrice = await fetchPriceFromDB(formattedSymbol, timestamp);
-    if (dbPrice) return dbPrice;
+    // First try to get from DB with a wider time window
+    const startTime = new Date(timestamp - 48 * 60 * 60 * 1000); // 48h before
+    const endTime = new Date(timestamp + 48 * 60 * 60 * 1000);   // 48h after
+    
+    const { data: prices, error } = await supabase
+      .from('historical_prices')
+      .select('*')
+      .eq('symbol', formattedSymbol)
+      .gte('timestamp', startTime.toISOString())
+      .lte('timestamp', endTime.toISOString())
+      .order('timestamp', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching historical price:', error);
+      return null;
+    }
+
+    if (prices && prices.length > 0) {
+      return prices[0].price;
+    }
 
     // If no price in DB, fetch fresh data
     const { data: invocationData, error: invocationError } = await supabase.functions.invoke('fetch-coincap-prices', {
-      body: { symbols: [symbol] }
+      body: { symbols: [formattedSymbol] }
     });
 
-    if (invocationError) throw invocationError;
+    if (invocationError) {
+      console.error('Error invoking edge function:', invocationError);
+      return null;
+    }
 
     // Try to get the price again after fetching fresh data
-    return await fetchPriceFromDB(formattedSymbol, timestamp);
+    const freshPrice = await fetchPriceFromDB(formattedSymbol, timestamp);
+    return freshPrice;
   } catch (error) {
     console.error('Error fetching historical price:', error);
     return null;
@@ -38,23 +59,23 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
     const formattedSymbol = formatCryptoSymbol(symbol);
     if (!formattedSymbol) return null;
     
-    // First try to get the latest price from the database
-    const dbPrice = await fetchPriceFromDB(formattedSymbol);
-    
-    // Always fetch fresh data to ensure we have the latest prices
+    // Always fetch fresh data first
     const { data: invocationData, error: invocationError } = await supabase.functions.invoke('fetch-coincap-prices', {
-      body: { symbols: [symbol] }
+      body: { symbols: [formattedSymbol] }
     });
 
     if (invocationError) {
       console.error('Error invoking edge function:', invocationError);
-      // If we have a DB price, return it even if fresh fetch failed
-      return dbPrice;
+      // Try to get the latest price from DB as fallback
+      return await fetchPriceFromDB(formattedSymbol);
     }
 
     // Get the latest price after fetching fresh data
-    const updatedPrice = await fetchPriceFromDB(formattedSymbol);
-    return updatedPrice || dbPrice;
+    const latestPrice = await fetchPriceFromDB(formattedSymbol);
+    if (latestPrice) return latestPrice;
+
+    console.error(`No price found for ${symbol} after multiple attempts`);
+    return null;
   } catch (error) {
     console.error(`Failed to fetch price for ${symbol}:`, error);
     return null;
