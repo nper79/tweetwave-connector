@@ -1,8 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
-
-export const API_CONFIG = {
-  LIVECOINWATCH_API_HOST: "api.livecoinwatch.com",
-};
+import { fetchFromLiveCoinWatch } from "./livecoinwatch-api";
 
 export const formatCryptoSymbol = (code: string | null): string | null => {
   if (!code) return null;
@@ -27,36 +23,15 @@ export const formatCryptoSymbol = (code: string | null): string | null => {
 
 export const fetchHistoricalPrice = async (symbol: string, timestamp: number): Promise<number | null> => {
   try {
-    const { data: { secret: apiKey } } = await supabase.functions.invoke('get-secret-value', {
-      body: { name: 'LIVECOINWATCH_API_KEY' }
+    const formattedSymbol = formatCryptoSymbol(symbol);
+    if (!formattedSymbol) return null;
+
+    console.log(`Fetching historical price for ${formattedSymbol} at ${new Date(timestamp).toISOString()}`);
+
+    const data = await fetchFromLiveCoinWatch('coins/single/history', formattedSymbol, {
+      start: timestamp - 300000, // 5 minutes before
+      end: timestamp + 300000,   // 5 minutes after
     });
-
-    if (!apiKey) {
-      console.error('LiveCoinWatch API key not found');
-      return null;
-    }
-
-    const response = await fetch("https://api.livecoinwatch.com/coins/single/history", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": apiKey,
-      },
-      body: JSON.stringify({
-        currency: "USD",
-        code: symbol,
-        start: timestamp - 300000, // 5 minutes before
-        end: timestamp + 300000,   // 5 minutes after
-        meta: true,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error(`Error fetching historical price for ${symbol}:`, response.statusText);
-      return null;
-    }
-
-    const data = await response.json();
     
     if (!data.history || data.history.length === 0) {
       console.error(`No historical price data found for ${symbol} at ${new Date(timestamp).toISOString()}`);
@@ -84,42 +59,8 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
     
     console.log(`Fetching current price for symbol: ${formattedSymbol}`);
     
-    const { data: { secret: apiKey } } = await supabase.functions.invoke('get-secret-value', {
-      body: { name: 'LIVECOINWATCH_API_KEY' }
-    });
-
-    if (!apiKey) {
-      console.error('LiveCoinWatch API key not found');
-      return null;
-    }
-
-    const response = await fetch("https://api.livecoinwatch.com/coins/single", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": apiKey,
-      },
-      body: JSON.stringify({
-        currency: "USD",
-        code: formattedSymbol,
-        meta: true,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error(`Error fetching current price for ${symbol}:`, response.statusText);
-      return null;
-    }
-
-    const data = await response.json();
-    console.log(`Price data received for ${symbol}:`, data);
-    
-    if (!data || !data.rate) {
-      console.error(`Invalid price data for ${symbol}:`, data);
-      return null;
-    }
-
-    return data.rate;
+    const data = await fetchFromLiveCoinWatch('coins/single', formattedSymbol);
+    return data.rate || null;
   } catch (error) {
     console.error(`Failed to fetch current price for ${symbol}:`, error);
     return null;

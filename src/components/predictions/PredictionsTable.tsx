@@ -1,9 +1,10 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useTwitterTimeline } from "@/hooks/use-twitter";
 import { usePredictions } from "@/hooks/use-predictions";
-import { useQueries, useQuery } from "@tanstack/react-query";
-import { formatCryptoSymbol, fetchHistoricalPrice, fetchCryptoPrice } from "@/utils/crypto-utils";
+import { useQuery } from "@tanstack/react-query";
+import { formatCryptoSymbol, fetchHistoricalPrice } from "@/utils/crypto-utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PredictionRow } from "./PredictionRow";
 
 interface PredictionsTableProps {
   username?: string;
@@ -13,7 +14,6 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
   const { data: tweets, isLoading: tweetsLoading } = useTwitterTimeline(username);
   const { data: predictionsData, isLoading: predictionsLoading } = usePredictions(tweets || []);
 
-  // Use useQuery to handle the async operations for predictions
   const { data: predictions = [] } = useQuery({
     queryKey: ['predictions-with-prices', predictionsData],
     queryFn: async () => {
@@ -43,41 +43,6 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
     enabled: !!predictionsData,
   });
 
-  const uniqueCryptos = [...new Set(predictions.map(p => p.crypto))];
-  console.log('Unique cryptos to fetch:', uniqueCryptos);
-  
-  // Fetch current prices for all unique cryptos
-  const priceQueries = useQueries({
-    queries: uniqueCryptos.map(crypto => ({
-      queryKey: ['crypto-price', crypto],
-      queryFn: () => fetchCryptoPrice(crypto),
-      refetchInterval: 30000,
-      retry: 2,
-      retryDelay: 1000,
-      staleTime: 20000,
-    })),
-  });
-
-  const getCurrentPrice = (symbol: string | null) => {
-    if (!symbol) return "---";
-    const queryIndex = uniqueCryptos.indexOf(symbol);
-    if (queryIndex === -1) return "---";
-    
-    const query = priceQueries[queryIndex];
-    
-    if (query.isError) {
-      console.error(`Error fetching price for ${symbol}:`, query.error);
-      return "Error";
-    }
-    
-    if (query.isLoading) {
-      return "Loading...";
-    }
-    
-    const price = query.data;
-    return price ? `$${Number(price).toLocaleString()}` : "N/A";
-  };
-
   if (tweetsLoading || predictionsLoading) {
     return (
       <div className="space-y-4">
@@ -104,15 +69,10 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
         </TableHeader>
         <TableBody>
           {predictions.map((prediction) => (
-            <TableRow key={`${prediction.crypto}-${prediction.predictionDate}`}>
-              <TableCell className="font-medium">{prediction.crypto || "---"}</TableCell>
-              <TableCell>${prediction.priceAtPrediction?.toLocaleString() || "---"}</TableCell>
-              <TableCell>{getCurrentPrice(prediction.symbol)}</TableCell>
-              <TableCell className="text-green-500">+{prediction.roi24h}%</TableCell>
-              <TableCell className="text-green-500">+{prediction.roi3d}%</TableCell>
-              <TableCell className="text-green-500">+{prediction.roi1w}%</TableCell>
-              <TableCell className="text-green-500">+{prediction.roi1m}%</TableCell>
-            </TableRow>
+            <PredictionRow 
+              key={`${prediction.crypto}-${prediction.predictionDate}`}
+              prediction={prediction}
+            />
           ))}
         </TableBody>
       </Table>
