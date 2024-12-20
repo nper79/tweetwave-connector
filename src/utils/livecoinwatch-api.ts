@@ -18,8 +18,11 @@ const getLiveCoinWatchApiKey = async () => {
 export const fetchFromLiveCoinWatch = async (endpoint: string, symbol: string, params: any = {}) => {
   try {
     const apiKey = await getLiveCoinWatchApiKey();
+    const baseUrl = "https://api.livecoinwatch.com";
     
-    const response = await fetch(`https://api.livecoinwatch.com/${endpoint}`, {
+    console.log(`Making LiveCoinWatch API request to ${endpoint} for ${symbol}`);
+    
+    const response = await fetch(`${baseUrl}/${endpoint}`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -34,10 +37,12 @@ export const fetchFromLiveCoinWatch = async (endpoint: string, symbol: string, p
     });
 
     if (!response.ok) {
-      throw new Error(`LiveCoinWatch API error: ${response.statusText}`);
+      throw new Error(`LiveCoinWatch API error: ${response.status} ${response.statusText}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    console.log(`LiveCoinWatch API response for ${symbol}:`, data);
+    return data;
   } catch (error) {
     console.error(`LiveCoinWatch API error:`, error);
     throw error;
