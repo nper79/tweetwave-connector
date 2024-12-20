@@ -18,18 +18,12 @@ export const formatCryptoSymbol = (code: string | null): string | null => {
     'ORAI': 'ORAI',
     'HBAR': 'HBAR',
     'FIL': 'FIL',
+    'LDO': 'LDO',
     // Add more mappings as needed
   };
 
   return symbolMap[cleanCode] || cleanCode;
 };
-
-interface HistoricalPriceResponse {
-  history: Array<{
-    date: number;
-    rate: number;
-  }>;
-}
 
 export const fetchHistoricalPrice = async (symbol: string, timestamp: number): Promise<number | null> => {
   try {
@@ -62,7 +56,7 @@ export const fetchHistoricalPrice = async (symbol: string, timestamp: number): P
       return null;
     }
 
-    const data: HistoricalPriceResponse = await response.json();
+    const data = await response.json();
     
     if (!data.history || data.history.length === 0) {
       console.error(`No historical price data found for ${symbol} at ${new Date(timestamp).toISOString()}`);

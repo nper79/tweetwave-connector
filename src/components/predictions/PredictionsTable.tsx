@@ -2,63 +2,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useTwitterTimeline } from "@/hooks/use-twitter";
 import { usePredictions } from "@/hooks/use-predictions";
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { API_CONFIG, formatCryptoSymbol, fetchHistoricalPrice } from "@/utils/crypto-utils";
+import { formatCryptoSymbol, fetchHistoricalPrice, fetchCryptoPrice } from "@/utils/crypto-utils";
 import { Skeleton } from "@/components/ui/skeleton";
-
-interface CryptoApiResponse {
-  error: number;
-  message: string;
-  data: {
-    symbol: string;
-    base: string;
-    price: string;
-    exchanges: Array<{
-      price: string;
-      exchange: string;
-      deviation: string;
-    }>;
-  };
-}
-
-const fetchCryptoPrice = async (symbol: string | null) => {
-  if (!symbol) return null;
-  
-  try {
-    const formattedSymbol = formatCryptoSymbol(symbol);
-    if (!formattedSymbol) return null;
-    
-    console.log(`Fetching price for symbol: ${formattedSymbol}`);
-    
-    const response = await fetch(
-      `https://${API_CONFIG.RAPID_API_HOST}/tokens/${formattedSymbol}?base=USDT`,
-      {
-        method: 'GET',
-        headers: {
-          'X-RapidAPI-Key': API_CONFIG.RAPID_API_KEY,
-          'X-RapidAPI-Host': API_CONFIG.RAPID_API_HOST
-        }
-      }
-    );
-
-    if (!response.ok) {
-      console.error(`Error fetching price for ${symbol}:`, response.statusText);
-      return null;
-    }
-
-    const responseData: CryptoApiResponse = await response.json();
-    console.log(`Price data received for ${symbol}:`, responseData);
-    
-    if (!responseData.data || !responseData.data.price) {
-      console.error(`Invalid price data for ${symbol}:`, responseData);
-      return null;
-    }
-
-    return parseFloat(responseData.data.price);
-  } catch (error) {
-    console.error(`Failed to fetch price for ${symbol}:`, error);
-    return null;
-  }
-};
 
 interface PredictionsTableProps {
   username?: string;
