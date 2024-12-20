@@ -17,11 +17,27 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
   const { data: predictions } = usePredictions(tweets || []);
 
   useEffect(() => {
-    // Force a refetch when component mounts in new tab
-    if (!isLoading && !tweets) {
-      refetch();
-    }
-  }, []);
+    let mounted = true;
+
+    const initializeData = async () => {
+      try {
+        // Only refetch if we don't have data and we're not currently loading
+        if (!isLoading && !tweets && mounted) {
+          console.log('Initializing data fetch for:', username);
+          await refetch();
+        }
+      } catch (error) {
+        console.error('Error fetching tweets:', error);
+      }
+    };
+
+    initializeData();
+
+    // Cleanup function
+    return () => {
+      mounted = false;
+    };
+  }, [tweets, isLoading, refetch, username]);
 
   if (isLoading) {
     return (
@@ -67,20 +83,22 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
   }
 
   // Ensure we have arrays to work with and create copies for sorting
-  const tweetsToSort = Array.isArray(tweets) ? [...tweets] : [];
+  const tweetsToSort = Array.isArray(tweets) ? [...tweets].filter(tweet => tweet && tweet.created_at) : [];
   const predictionTweets = predictions?.map(p => p.tweet).filter(Boolean) || [];
   
   // Sort tweets by date (newest first)
   const sortedTweets = tweetsToSort.sort((a, b) => {
-    if (!a.created_at || !b.created_at) return 0;
+    if (!a?.created_at || !b?.created_at) return 0;
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
   // Sort prediction tweets by date (newest first)
-  const sortedPredictionTweets = [...predictionTweets].sort((a, b) => {
-    if (!a.created_at || !b.created_at) return 0;
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
+  const sortedPredictionTweets = predictionTweets
+    .filter(tweet => tweet && tweet.created_at)
+    .sort((a, b) => {
+      if (!a?.created_at || !b?.created_at) return 0;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
   
   console.log('Original tweets length:', tweets.length);
   console.log('Sorted tweets length:', sortedTweets.length);
