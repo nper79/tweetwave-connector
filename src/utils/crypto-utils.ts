@@ -1,30 +1,17 @@
 import ccxt from 'ccxt';
 
 // Initialize Binance exchange in browser mode
-const exchange = new ccxt.binance({
+const exchange = new ccxt.pro.binance({
   enableRateLimit: true,
   options: {
     defaultType: 'spot',
     warnOnFetchOHLCVLimitArgument: false,
     createMarketBuyOrderRequiresPrice: false,
-    defaultFetchImplementation: 'fetch',
-    fetchImplementation: async (url: string, options: RequestInit = {}, headers: Record<string, string> = {}) => {
-      return fetch(url, { 
-        ...options, 
-        headers: { 
-          ...headers, 
-          ...(options.headers || {}),
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        } 
-      });
-    },
   },
 });
 
-// Force 'cors' mode for browser environment
-exchange.headers = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-};
+// Force browser mode
+exchange.browser = true;
 
 export const formatCryptoSymbol = (code: string | null): string | null => {
   if (!code) return null;
