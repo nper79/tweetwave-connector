@@ -1,10 +1,11 @@
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useTwitterTimeline } from "@/hooks/use-twitter";
 import { usePredictions } from "@/hooks/use-predictions";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchHistoricalPrice } from "@/utils/crypto-utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PredictionRow } from "./PredictionRow";
+import { useEffect } from "react";
 
 interface PredictionsTableProps {
   username?: string;
@@ -13,6 +14,24 @@ interface PredictionsTableProps {
 export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTableProps) => {
   const { data: tweets, isLoading: tweetsLoading } = useTwitterTimeline(username);
   const { data: predictionsData, isLoading: predictionsLoading } = usePredictions(tweets || []);
+  const queryClient = useQueryClient();
+
+  // Prefetch prices when component mounts
+  useEffect(() => {
+    if (predictionsData) {
+      predictionsData.forEach(p => {
+        queryClient.prefetchQuery({
+          queryKey: ['historical-price', p.prediction.crypto, p.prediction.prediction_date],
+          queryFn: () => fetchHistoricalPrice(
+            p.prediction.crypto,
+            new Date(p.prediction.prediction_date).getTime()
+          ),
+          staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
+          cacheTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
+        });
+      });
+    }
+  }, [predictionsData, queryClient]);
 
   const { data: predictions = [] } = useQuery({
     queryKey: ['predictions-with-prices', predictionsData],
@@ -20,10 +39,15 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
       if (!predictionsData) return [];
       
       const predictionPromises = predictionsData.map(async p => {
-        const historicalPrice = await fetchHistoricalPrice(
-          p.prediction.crypto,
-          new Date(p.prediction.prediction_date).getTime()
-        );
+        const historicalPrice = await queryClient.fetchQuery({
+          queryKey: ['historical-price', p.prediction.crypto, p.prediction.prediction_date],
+          queryFn: () => fetchHistoricalPrice(
+            p.prediction.crypto,
+            new Date(p.prediction.prediction_date).getTime()
+          ),
+          staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
+          cacheTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
+        });
         
         return {
           crypto: p.prediction.crypto,
@@ -41,6 +65,10 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
       return Promise.all(predictionPromises);
     },
     enabled: !!predictionsData,
+    staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
+    cacheTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
+    retry: 3, // Retry failed requests 3 times
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 
   if (tweetsLoading || predictionsLoading) {
