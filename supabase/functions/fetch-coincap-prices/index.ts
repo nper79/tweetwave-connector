@@ -11,43 +11,17 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Starting crypto price fetch...');
+    console.log('Starting crypto price fetch from Yahoo Finance...');
     
-    const apiKey = Deno.env.get('RAPIDAPI_KEY');
-    if (!apiKey) {
-      console.error('RapidAPI key not found');
-      throw new Error('RapidAPI key not found');
-    }
-
     const cryptos = ['BTC', 'ETH', 'SOL', 'XRP', 'PEPE', 'FLOKI'];
     const prices = [];
 
-    // Coin UUIDs mapping
-    const coinUuids = {
-      'BTC': 'Qwsogvtv82FCd',  // Bitcoin
-      'ETH': 'razxDUgYGNAdQ',  // Ethereum
-      'SOL': 'zNZHO_Sjf',      // Solana
-      'XRP': '-l8Mn2pVlRs-p',  // XRP
-      'PEPE': 'IwYmAqFJoqxzn', // PEPE
-      'FLOKI': 'SXX4mDM_9yOC1' // FLOKI
-    };
-
     for (const symbol of cryptos) {
       console.log(`Fetching ${symbol} price...`);
-      const uuid = coinUuids[symbol];
-      
-      if (!uuid) {
-        console.error(`No UUID found for ${symbol}`);
-        continue;
-      }
       
       try {
-        const response = await fetch(`https://coinranking1.p.rapidapi.com/coin/${uuid}/price`, {
-          headers: {
-            'x-rapidapi-host': 'coinranking1.p.rapidapi.com',
-            'x-rapidapi-key': apiKey
-          }
-        });
+        // Yahoo Finance uses -USD suffix for crypto pairs
+        const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}-USD`);
 
         if (!response.ok) {
           console.error(`Error fetching ${symbol}:`, response.status, response.statusText);
@@ -59,8 +33,8 @@ serve(async (req) => {
         const data = await response.json();
         console.log(`Raw data for ${symbol}:`, data);
 
-        if (data && data.data && data.data.price) {
-          const price = parseFloat(data.data.price);
+        if (data?.chart?.result?.[0]?.meta?.regularMarketPrice) {
+          const price = data.chart.result[0].meta.regularMarketPrice;
           console.log(`Parsed price for ${symbol}:`, price);
           
           prices.push({
