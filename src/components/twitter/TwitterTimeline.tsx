@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TweetCard } from "./TweetCard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
 
 interface TwitterTimelineProps {
   username?: string;
@@ -14,6 +15,13 @@ interface TwitterTimelineProps {
 export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps) => {
   const { data: tweets, isLoading, error, refetch } = useTwitterTimeline(username);
   const { data: predictions } = usePredictions(tweets || []);
+
+  useEffect(() => {
+    // Force a refetch when component mounts in new tab
+    if (!isLoading && !tweets) {
+      refetch();
+    }
+  }, []);
 
   if (isLoading) {
     return (
@@ -64,16 +72,14 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
   
   // Sort tweets by date (newest first)
   const sortedTweets = tweetsToSort.sort((a, b) => {
-    const dateA = new Date(a.created_at).getTime();
-    const dateB = new Date(b.created_at).getTime();
-    return dateB - dateA;
+    if (!a.created_at || !b.created_at) return 0;
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
   // Sort prediction tweets by date (newest first)
   const sortedPredictionTweets = [...predictionTweets].sort((a, b) => {
-    const dateA = new Date(a.created_at).getTime();
-    const dateB = new Date(b.created_at).getTime();
-    return dateB - dateA;
+    if (!a.created_at || !b.created_at) return 0;
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
   
   console.log('Original tweets length:', tweets.length);
