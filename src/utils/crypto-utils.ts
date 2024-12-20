@@ -1,8 +1,10 @@
 import ccxt from 'ccxt';
 
-// Initialize Binance exchange in browser mode
+// Initialize Binance exchange with browser-compatible configuration
 const exchange = new ccxt.binance({
   enableRateLimit: true,
+  // Disable proxy support since we're in browser environment
+  proxyAgent: false,
   options: {
     defaultType: 'spot',
     warnOnFetchOHLCVLimitArgument: false,
