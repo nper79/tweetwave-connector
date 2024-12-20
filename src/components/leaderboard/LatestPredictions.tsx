@@ -52,7 +52,8 @@ export const LatestPredictions = () => {
     );
   }
 
-  const predictionsFromTweets = tweets?.filter(isPredictionTweet).slice(0, 3);
+  const predictionsFromTweets = tweets?.filter(tweet => tweet && isPredictionTweet(tweet)).slice(0, 3);
+  console.log('Filtered predictions:', predictionsFromTweets);
 
   return (
     <Card className="bg-white dark:bg-gray-800 shadow-sm">

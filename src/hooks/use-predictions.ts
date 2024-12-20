@@ -10,10 +10,13 @@ const getCurrentPrice = async (crypto: string): Promise<number> => {
 const parsePredictionFromTweet = (tweet: Tweet) => {
   if (!tweet.text) return null;
   
+  const crypto = extractCryptoSymbol(tweet.text);
+  const targetPrice = extractTargetPrice(tweet.text);
+  
   return {
-    crypto: extractCryptoSymbol(tweet.text),
+    crypto,
     price_at_prediction: 50000, // Mock price for testing
-    target_price: extractTargetPrice(tweet.text),
+    target_price: targetPrice,
     tweet_id: tweet.tweet_id,
     tweet_text: tweet.text,
     prediction_date: tweet.created_at
@@ -54,31 +57,26 @@ export const usePredictions = (tweets: Tweet[] = []) => {
     queryKey: ['predictions', tweets.map(t => t.tweet_id)],
     queryFn: async () => {
       console.log("Analyzing tweets for predictions...");
-      const predictionTweets = tweets.filter(isPredictionTweet);
-      console.log(`Found ${predictionTweets.length} prediction tweets`);
+      const predictionTweets = tweets.filter(tweet => tweet && isPredictionTweet(tweet));
+      console.log(`Found ${predictionTweets.length} prediction tweets:`, predictionTweets);
       
+      const predictions = [];
       for (const tweet of predictionTweets) {
         try {
           await storePredictionMutation.mutateAsync(tweet);
+          const prediction = parsePredictionFromTweet(tweet);
+          if (prediction) {
+            predictions.push({
+              prediction,
+              tweet
+            });
+          }
         } catch (error) {
           console.error('Error storing prediction:', error);
         }
       }
 
-      return predictionTweets.map(tweet => {
-        const prediction = parsePredictionFromTweet(tweet);
-        return {
-          prediction: prediction || {
-            crypto: extractCryptoSymbol(tweet.text || ''),
-            price_at_prediction: 50000,
-            target_price: extractTargetPrice(tweet.text || ''),
-            tweet_id: tweet.tweet_id,
-            tweet_text: tweet.text,
-            prediction_date: tweet.created_at
-          },
-          tweet
-        };
-      });
+      return predictions;
     },
     enabled: tweets.length > 0,
   });
