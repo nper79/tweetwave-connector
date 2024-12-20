@@ -60,18 +60,16 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Store prices in our database
+    const timestamp = new Date().toISOString();
     const prices = data.data.map(coin => ({
       symbol: coin.symbol,
       price: parseFloat(coin.priceUsd),
-      timestamp: new Date().toISOString()
+      timestamp
     }));
 
     const { error: insertError } = await supabase
       .from('historical_prices')
-      .upsert(prices, {
-        onConflict: 'symbol,timestamp',
-        ignoreDuplicates: true
-      });
+      .insert(prices);
 
     if (insertError) {
       console.error('Error storing prices:', insertError);
