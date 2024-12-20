@@ -54,6 +54,6 @@ export const useTwitterTimeline = (screenname: string = "elonmusk") => {
     retryDelay: 1000,
     refetchOnWindowFocus: false,
     staleTime: 30000, // 30 seconds
-    cacheTime: 60000, // 1 minute
+    gcTime: 60000 // 1 minute (replaces cacheTime)
   });
 };

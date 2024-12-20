@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TweetCard } from "./TweetCard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Tweet } from "@/types/twitter";
 
 interface TwitterTimelineProps {
@@ -18,22 +18,22 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
   const { data: tweets, isLoading, error, refetch } = useTwitterTimeline(username);
   const { data: predictions } = usePredictions(tweets || []);
 
-  useEffect(() => {
-    const initializeFetch = async () => {
-      if (isInitialLoad && !tweets && !isLoading) {
-        console.log('Initial fetch for:', username);
-        try {
-          await refetch();
-        } catch (error) {
-          console.error('Error during initial fetch:', error);
-        } finally {
-          setIsInitialLoad(false);
-        }
-      }
-    };
+  const handleRefetch = useCallback(async () => {
+    setIsInitialLoad(true);
+    try {
+      await refetch();
+    } catch (error) {
+      console.error('Refetch error:', error);
+    } finally {
+      setIsInitialLoad(false);
+    }
+  }, [refetch]);
 
-    initializeFetch();
-  }, [username, isInitialLoad, tweets, isLoading, refetch]);
+  useEffect(() => {
+    if (isInitialLoad && !tweets && !isLoading) {
+      handleRefetch();
+    }
+  }, [isInitialLoad, tweets, isLoading, handleRefetch]);
 
   if (isLoading) {
     return (
@@ -57,10 +57,7 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={() => {
-              setIsInitialLoad(true);
-              refetch();
-            }}
+            onClick={handleRefetch}
             className="ml-2"
           >
             <RotateCw className="mr-2 h-4 w-4" />
