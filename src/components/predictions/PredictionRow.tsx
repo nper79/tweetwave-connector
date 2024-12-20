@@ -30,12 +30,14 @@ export const PredictionRow = ({ prediction }: PredictionRowProps) => {
     enabled: !!prediction.crypto
   });
 
-  console.log(`PredictionRow - ${prediction.crypto}:`, {
-    currentPrice,
-    isLoading,
-    isError,
-    prediction
-  });
+  // Only log when there's an error or significant price change
+  if (isError || (currentPrice && Math.abs(currentPrice - prediction.priceAtPrediction) / prediction.priceAtPrediction > 0.05)) {
+    console.log(`Price update for ${prediction.crypto}:`, {
+      currentPrice,
+      priceAtPrediction: prediction.priceAtPrediction,
+      error: isError ? 'Failed to fetch price' : null
+    });
+  }
 
   if (isLoading) {
     return (
@@ -86,7 +88,6 @@ export const PredictionRow = ({ prediction }: PredictionRowProps) => {
     );
   }
 
-  // Calculate ROI if we have both prices
   const calculateRoi = () => {
     if (!currentPrice || !prediction.priceAtPrediction) return 0;
     return ((currentPrice - prediction.priceAtPrediction) / prediction.priceAtPrediction) * 100;

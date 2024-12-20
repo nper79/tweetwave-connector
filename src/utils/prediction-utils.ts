@@ -1,6 +1,5 @@
 import { Tweet } from "@/types/twitter";
 
-// Keywords for different types of predictions
 const PREDICTION_KEYWORDS = [
   'prediction', 'predict', 'target', 'expect', 'soon', 'coming',
   'dip', 'drop', 'fall', 'decline', 'bearish',
@@ -33,13 +32,22 @@ export const isPredictionTweet = (tweet: Tweet | null): tweet is Tweet => {
   if (!tweet?.text) return false;
   
   const text = tweet.text.toLowerCase();
-  return hasCryptoSymbol(tweet.text) && (hasPredictionKeyword(text) || hasTechnicalAnalysis(text));
+  const isPrediction = hasCryptoSymbol(tweet.text) && (hasPredictionKeyword(text) || hasTechnicalAnalysis(text));
+  
+  // Only log if it's not a prediction
+  if (!isPrediction && hasCryptoSymbol(tweet.text)) {
+    console.log('Tweet contains crypto symbol but no prediction:', tweet.text);
+  }
+  
+  return isPrediction;
 };
 
 export const extractCryptoSymbol = (text: string): string => {
   const match = text.match(/\$[A-Z]{2,}/);
-  if (!match) return 'BTC';
-  // Just remove the $ and return the clean symbol
+  if (!match) {
+    console.log('No crypto symbol found in text:', text);
+    return 'BTC';
+  }
   return match[0].replace(/^\$/, '');
 };
 
@@ -54,7 +62,6 @@ export const extractTargetPrice = (text: string): number | null => {
     const match = text.match(pattern);
     if (match) {
       let value = parseFloat(match[1].replace(/,/g, ''));
-      // If the price ends with 'k' or 'K', multiply by 1000
       if (match[0].toLowerCase().includes('k')) {
         value *= 1000;
       }
