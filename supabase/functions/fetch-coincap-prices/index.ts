@@ -11,46 +11,46 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Starting crypto price fetch from Yahoo Finance...');
+    console.log('Starting crypto price fetch from Binance API...');
     
-    const cryptos = ['BTC', 'ETH', 'SOL', 'XRP', 'PEPE', 'FLOKI'];
+    const cryptos = ['BTC', 'ETH', 'SOL', 'XRP'];
     const prices = [];
 
+    // Fetch all prices at once from Binance
+    const response = await fetch('https://api.binance.com/api/v3/ticker/price');
+    
+    if (!response.ok) {
+      console.error('Error fetching from Binance:', response.status, response.statusText);
+      const errorText = await response.text();
+      console.error('Error details:', errorText);
+      throw new Error('Failed to fetch prices from Binance');
+    }
+
+    const allPrices = await response.json();
+    console.log('Successfully fetched all prices from Binance');
+
     for (const symbol of cryptos) {
-      console.log(`Fetching ${symbol} price...`);
+      console.log(`Processing ${symbol} price...`);
       
-      try {
-        // Yahoo Finance uses -USD suffix for crypto pairs
-        const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}-USD`);
-
-        if (!response.ok) {
-          console.error(`Error fetching ${symbol}:`, response.status, response.statusText);
-          const errorText = await response.text();
-          console.error(`Error details for ${symbol}:`, errorText);
-          continue;
-        }
-
-        const data = await response.json();
-        console.log(`Raw data for ${symbol}:`, data);
-
-        if (data?.chart?.result?.[0]?.meta?.regularMarketPrice) {
-          const price = data.chart.result[0].meta.regularMarketPrice;
-          console.log(`Parsed price for ${symbol}:`, price);
-          
-          prices.push({
-            symbol,
-            price,
-            timestamp: new Date().toISOString()
-          });
-        } else {
-          console.error(`Invalid data format for ${symbol}:`, data);
-        }
-      } catch (error) {
-        console.error(`Failed to fetch ${symbol}:`, error);
+      // Binance uses USDT pairs for most cryptocurrencies
+      const binanceSymbol = `${symbol}USDT`;
+      const priceData = allPrices.find(p => p.symbol === binanceSymbol);
+      
+      if (priceData) {
+        const price = parseFloat(priceData.price);
+        console.log(`Found price for ${symbol}:`, price);
+        
+        prices.push({
+          symbol,
+          price,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        console.log(`No price found for ${symbol}`);
       }
     }
 
-    console.log(`Successfully fetched ${prices.length} prices:`, prices);
+    console.log(`Successfully processed ${prices.length} prices:`, prices);
 
     return new Response(
       JSON.stringify({ success: true, count: prices.length, prices }),
