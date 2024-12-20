@@ -27,7 +27,7 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
             new Date(p.prediction.prediction_date).getTime()
           ),
           staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
-          cacheTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
+          gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes (formerly cacheTime)
         });
       });
     }
@@ -46,7 +46,7 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
             new Date(p.prediction.prediction_date).getTime()
           ),
           staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
-          cacheTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
+          gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes (formerly cacheTime)
         });
         
         return {
@@ -66,7 +66,7 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
     },
     enabled: !!predictionsData,
     staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
-    cacheTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
+    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes (formerly cacheTime)
     retry: 3, // Retry failed requests 3 times
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
