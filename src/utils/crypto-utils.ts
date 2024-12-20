@@ -5,6 +5,11 @@ const exchange = new ccxt.binance({
   enableRateLimit: true, // Enable built-in rate limiter
   options: {
     defaultType: 'spot', // Use spot markets
+    warnOnFetchOHLCVLimitArgument: false,
+    createMarketBuyOrderRequiresPrice: false,
+    fetchImplementation: async (url, options = {}, headers = {}) => {
+      return fetch(url, { ...options, headers: { ...headers, ...options.headers } });
+    },
   },
 });
 
