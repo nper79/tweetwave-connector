@@ -11,53 +11,60 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Starting crypto price fetch...');
+    console.log('Starting crypto price fetch using CoinCap API...');
     
-    const apiKey = Deno.env.get('RAPIDAPI_KEY');
+    const apiKey = Deno.env.get('COINCAP_API_KEY');
     if (!apiKey) {
-      console.error('RapidAPI key not found');
-      throw new Error('RapidAPI key not found');
+      console.error('CoinCap API key not found');
+      throw new Error('CoinCap API key not found');
     }
 
-    const cryptos = ['BTC', 'ETH', 'SOL', 'XRP'];
+    const cryptos = ['bitcoin', 'ethereum', 'solana', 'ripple'];
     const prices = [];
 
-    for (const symbol of cryptos) {
-      const endpoint = `https://crypto-market-prices.p.rapidapi.com/price?symbol=${symbol}USDT`;
-      console.log(`Fetching ${symbol} price from endpoint:`, endpoint);
+    for (const id of cryptos) {
+      const endpoint = `https://api.coincap.io/v2/assets/${id}`;
+      console.log(`Fetching ${id} price from endpoint:`, endpoint);
       
       try {
         const response = await fetch(endpoint, {
           headers: {
-            'x-rapidapi-host': 'crypto-market-prices.p.rapidapi.com',
-            'x-rapidapi-key': apiKey
+            'Authorization': `Bearer ${apiKey}`
           }
         });
 
         if (!response.ok) {
-          console.error(`Error fetching ${symbol}:`, response.status, response.statusText);
+          console.error(`Error fetching ${id}:`, response.status, response.statusText);
           const errorText = await response.text();
-          console.error(`Error details for ${symbol}:`, errorText);
+          console.error(`Error details for ${id}:`, errorText);
           continue;
         }
 
         const data = await response.json();
-        console.log(`Raw data for ${symbol}:`, data);
+        console.log(`Raw data for ${id}:`, data);
 
-        if (data && data.price) {
-          const price = parseFloat(data.price);
-          console.log(`Parsed price for ${symbol}:`, price);
+        if (data && data.data && data.data.priceUsd) {
+          const price = parseFloat(data.data.priceUsd);
+          console.log(`Parsed price for ${id}:`, price);
+          
+          // Map the id to symbol for consistency with the frontend
+          const symbolMap: { [key: string]: string } = {
+            'bitcoin': 'BTC',
+            'ethereum': 'ETH',
+            'solana': 'SOL',
+            'ripple': 'XRP'
+          };
           
           prices.push({
-            symbol,
+            symbol: symbolMap[id],
             price,
             timestamp: new Date().toISOString()
           });
         } else {
-          console.error(`Invalid data format for ${symbol}:`, data);
+          console.error(`Invalid data format for ${id}:`, data);
         }
       } catch (error) {
-        console.error(`Failed to fetch ${symbol}:`, error);
+        console.error(`Failed to fetch ${id}:`, error);
       }
     }
 
