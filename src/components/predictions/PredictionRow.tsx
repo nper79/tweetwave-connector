@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchCryptoPrice } from "@/utils/crypto-utils";
 import { formatPrice } from "@/utils/price-utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TrendingUp, TrendingDown } from "lucide-react";
 
 interface PredictionRowProps {
   prediction: {
@@ -39,8 +40,34 @@ export const PredictionRow = ({ prediction }: PredictionRowProps) => {
   if (isLoading) {
     return (
       <TableRow>
-        <TableCell colSpan={7}>
-          <Skeleton className="h-12 w-full" />
+        <TableCell className="font-medium">{prediction.crypto}</TableCell>
+        <TableCell>{formatPrice(prediction.priceAtPrediction)}</TableCell>
+        <TableCell>
+          <Skeleton className="h-6 w-24" />
+        </TableCell>
+        <TableCell>
+          <div className="text-green-500 flex items-center gap-1">
+            <TrendingUp className="h-4 w-4" />
+            +{prediction.roi24h}%
+          </div>
+        </TableCell>
+        <TableCell>
+          <div className="text-green-500 flex items-center gap-1">
+            <TrendingUp className="h-4 w-4" />
+            +{prediction.roi3d}%
+          </div>
+        </TableCell>
+        <TableCell>
+          <div className="text-green-500 flex items-center gap-1">
+            <TrendingUp className="h-4 w-4" />
+            +{prediction.roi1w}%
+          </div>
+        </TableCell>
+        <TableCell>
+          <div className="text-green-500 flex items-center gap-1">
+            <TrendingUp className="h-4 w-4" />
+            +{prediction.roi1m}%
+          </div>
         </TableCell>
       </TableRow>
     );
@@ -49,22 +76,54 @@ export const PredictionRow = ({ prediction }: PredictionRowProps) => {
   if (isError) {
     return (
       <TableRow>
-        <TableCell colSpan={7} className="text-center text-red-500">
-          Error loading prediction data
+        <TableCell className="font-medium">{prediction.crypto}</TableCell>
+        <TableCell>{formatPrice(prediction.priceAtPrediction)}</TableCell>
+        <TableCell className="text-red-500">Error fetching price</TableCell>
+        <TableCell colSpan={4} className="text-center text-gray-500">
+          Unable to calculate ROI
         </TableCell>
       </TableRow>
     );
   }
 
+  // Calculate ROI if we have both prices
+  const calculateRoi = () => {
+    if (!currentPrice || !prediction.priceAtPrediction) return 0;
+    return ((currentPrice - prediction.priceAtPrediction) / prediction.priceAtPrediction) * 100;
+  };
+
+  const roi = calculateRoi();
+  const isPositive = roi >= 0;
+
   return (
     <TableRow>
-      <TableCell className="font-medium">{prediction.crypto || "---"}</TableCell>
+      <TableCell className="font-medium">{prediction.crypto}</TableCell>
       <TableCell>{formatPrice(prediction.priceAtPrediction)}</TableCell>
       <TableCell>{formatPrice(currentPrice)}</TableCell>
-      <TableCell className="text-green-500">+{prediction.roi24h}%</TableCell>
-      <TableCell className="text-green-500">+{prediction.roi3d}%</TableCell>
-      <TableCell className="text-green-500">+{prediction.roi1w}%</TableCell>
-      <TableCell className="text-green-500">+{prediction.roi1m}%</TableCell>
+      <TableCell>
+        <div className={`flex items-center gap-1 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+          {isPositive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+          {isPositive ? '+' : ''}{prediction.roi24h}%
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className={`flex items-center gap-1 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+          {isPositive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+          {isPositive ? '+' : ''}{prediction.roi3d}%
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className={`flex items-center gap-1 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+          {isPositive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+          {isPositive ? '+' : ''}{prediction.roi1w}%
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className={`flex items-center gap-1 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+          {isPositive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+          {isPositive ? '+' : ''}{prediction.roi1m}%
+        </div>
+      </TableCell>
     </TableRow>
   );
 };
