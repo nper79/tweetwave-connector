@@ -18,13 +18,18 @@ serve(async (req) => {
     // Create Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    if (!supabaseUrl || !supabaseKey) throw new Error('Missing Supabase credentials')
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Missing Supabase credentials')
+      throw new Error('Missing Supabase credentials')
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // First try to get data from our database
     const startTime = start || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
     const endTime = end || new Date().toISOString()
 
+    console.log('Checking database for recent prices...')
     const { data: historicalPrices, error: dbError } = await supabase
       .from('historical_prices')
       .select('*')
@@ -45,7 +50,7 @@ serve(async (req) => {
     )
 
     if (hasRecentData && historicalPrices.length > 0) {
-      console.log('Returning cached historical prices')
+      console.log('Found recent prices in database, returning cached data')
       return new Response(
         JSON.stringify({
           history: historicalPrices.map(p => ({
@@ -58,13 +63,13 @@ serve(async (req) => {
     }
 
     // If we don't have recent data, fetch from LiveCoinWatch
-    console.log('Fetching fresh data from LiveCoinWatch')
+    console.log('No recent data found, fetching from LiveCoinWatch API...')
     const apiKey = await supabase.rpc('get_secret_value', { secret_name: 'LIVECOINWATCH_API_KEY' })
     if (!apiKey) {
-      console.error('LiveCoinWatch API key not found')
+      console.error('LiveCoinWatch API key not found in secrets')
       throw new Error('LiveCoinWatch API key not found')
     }
-    console.log('Got API key from secrets')
+    console.log('Successfully retrieved API key from secrets')
 
     const response = await fetch('https://api.livecoinwatch.com/coins/single/history', {
       method: 'POST',
@@ -89,10 +94,11 @@ serve(async (req) => {
     }
 
     const data = await response.json()
-    console.log('Received new data from LiveCoinWatch')
+    console.log('Successfully received data from LiveCoinWatch')
 
     // Store the new prices in our database
     if (data.history && data.history.length > 0) {
+      console.log('Storing new prices in database...')
       const newPrices = data.history.map((h: any) => ({
         symbol: symbol,
         price: h.rate,
@@ -109,7 +115,7 @@ serve(async (req) => {
       if (insertError) {
         console.error('Error storing prices:', insertError)
       } else {
-        console.log('Successfully stored new prices')
+        console.log('Successfully stored new prices in database')
       }
     }
 
