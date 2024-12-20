@@ -65,13 +65,21 @@ serve(async (req) => {
     // If we don't have recent data, fetch from LiveCoinWatch
     console.log('No recent data found, fetching from LiveCoinWatch API...')
     const apiKey = await supabase.rpc('get_secret_value', { secret_name: 'LIVECOINWATCH_API_KEY' })
+    
     if (!apiKey) {
       console.error('LiveCoinWatch API key not found in secrets')
       throw new Error('LiveCoinWatch API key not found')
     }
+
+    // Validate API key format (basic check)
+    if (typeof apiKey !== 'string' || apiKey.length < 10) {
+      console.error('Invalid LiveCoinWatch API key format')
+      throw new Error('Invalid LiveCoinWatch API key format')
+    }
+
     console.log('Successfully retrieved API key from secrets')
 
-    const response = await fetch('https://api.livecoinwatch.com/coins/single/history', {
+    const liveCoinWatchResponse = await fetch('https://api.livecoinwatch.com/coins/single/history', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -86,15 +94,23 @@ serve(async (req) => {
       }),
     })
 
-    if (!response.ok) {
-      console.error('LiveCoinWatch API error:', response.status, response.statusText)
-      const responseText = await response.text()
-      console.error('Response body:', responseText)
-      throw new Error(`LiveCoinWatch API error: ${response.statusText || responseText}`)
+    if (!liveCoinWatchResponse.ok) {
+      const errorText = await liveCoinWatchResponse.text()
+      console.error('LiveCoinWatch API error:', {
+        status: liveCoinWatchResponse.status,
+        statusText: liveCoinWatchResponse.statusText,
+        body: errorText
+      })
+      throw new Error(`LiveCoinWatch API error: ${liveCoinWatchResponse.statusText || errorText}`)
     }
 
-    const data = await response.json()
+    const data = await liveCoinWatchResponse.json()
     console.log('Successfully received data from LiveCoinWatch')
+
+    if (!data || !data.history) {
+      console.error('Invalid response format from LiveCoinWatch:', data)
+      throw new Error('Invalid response format from LiveCoinWatch')
+    }
 
     // Store the new prices in our database
     if (data.history && data.history.length > 0) {
