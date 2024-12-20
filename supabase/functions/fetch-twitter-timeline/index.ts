@@ -40,15 +40,29 @@ serve(async (req) => {
       options
     );
 
+    const responseText = await response.text();
+    console.log("Raw API Response:", responseText);
+
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Twitter API Error Response:", errorText);
+      console.error("Twitter API Error Response:", responseText);
       console.error("Response status:", response.status);
       console.error("Response headers:", Object.fromEntries(response.headers.entries()));
       throw new Error(`Failed to fetch tweets: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error("Failed to parse JSON response:", e);
+      throw new Error("Invalid JSON response from Twitter API");
+    }
+
+    if (!data || !data.timeline) {
+      console.error("Unexpected API response structure:", data);
+      throw new Error("Invalid response structure from Twitter API");
+    }
+
     console.log("Successfully fetched tweets:", data.timeline?.length || 0);
 
     return new Response(
@@ -65,7 +79,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        details: error.stack
+        details: error.stack,
+        timestamp: new Date().toISOString()
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

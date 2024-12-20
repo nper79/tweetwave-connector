@@ -26,7 +26,12 @@ export const useTwitterTimeline = (screenname: string = "elonmusk") => {
           throw new Error("Invalid response format from Twitter API");
         }
 
-        console.log("Successfully fetched tweets:", data.timeline.length);
+        // Log the successful response
+        console.log("Successfully fetched tweets:", {
+          count: data.timeline.length,
+          firstTweet: data.timeline[0],
+        });
+
         return data.timeline;
       } catch (error) {
         console.error("Twitter API Error:", error);
