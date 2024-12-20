@@ -37,20 +37,26 @@ export const fetchPriceFromDB = async (symbol: string, timestamp?: number) => {
   console.log(`Fetching price for ${symbol} ${timestamp ? 'at ' + new Date(timestamp).toISOString() : '(latest)'}`);
   
   try {
-    const query = supabase
+    let query = supabase
       .from('historical_prices')
       .select('*')
       .eq('symbol', symbol);
 
     if (timestamp) {
-      query
-        .gte('timestamp', new Date(timestamp - 24 * 60 * 60 * 1000).toISOString())
-        .lte('timestamp', new Date(timestamp + 24 * 60 * 60 * 1000).toISOString());
+      // Expand the time window to 12 hours before and after to ensure we find a price
+      const startTime = new Date(timestamp - 12 * 60 * 60 * 1000);
+      const endTime = new Date(timestamp + 12 * 60 * 60 * 1000);
+      
+      query = query
+        .gte('timestamp', startTime.toISOString())
+        .lte('timestamp', endTime.toISOString())
+        .order('timestamp', { ascending: true });
+    } else {
+      // For current price, get the most recent one
+      query = query.order('timestamp', { ascending: false });
     }
 
-    const { data: prices, error: dbError } = await query
-      .order('timestamp', { ascending: timestamp ? true : false })
-      .limit(1);
+    const { data: prices, error: dbError } = await query.limit(1);
 
     if (dbError) {
       console.error('Database error:', dbError);

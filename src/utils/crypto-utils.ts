@@ -4,13 +4,16 @@ import { fetchPriceFromDB } from "./price-utils";
 export const formatCryptoSymbol = (code: string | null): string | null => {
   if (!code) return null;
   const cleanCode = code.replace('$', '').toUpperCase();
-  return cleanCode; // Don't append USDT here, let the API handle it
+  return `${cleanCode}USDT`; // Add back USDT suffix for API compatibility
 };
 
 export const fetchHistoricalPrice = async (symbol: string, timestamp: number): Promise<number | null> => {
   try {
-    console.log(`Fetching historical price for ${symbol}`);
-    return await fetchPriceFromDB(symbol, timestamp);
+    console.log(`Fetching historical price for ${symbol} at ${new Date(timestamp).toISOString()}`);
+    const formattedSymbol = formatCryptoSymbol(symbol);
+    if (!formattedSymbol) return null;
+    
+    return await fetchPriceFromDB(formattedSymbol, timestamp);
   } catch (error) {
     console.error('Error fetching historical price:', error);
     return null;
@@ -22,16 +25,18 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
   
   try {
     console.log(`Fetching current price for ${symbol}...`);
+    const formattedSymbol = formatCryptoSymbol(symbol);
+    if (!formattedSymbol) return null;
     
     // Try to get the latest price from the database
-    const price = await fetchPriceFromDB(symbol);
-    console.log(`Price from DB for ${symbol}:`, price);
+    const price = await fetchPriceFromDB(formattedSymbol);
+    console.log(`Price from DB for ${formattedSymbol}:`, price);
     if (price !== null) return price;
 
     // If we don't have a recent price, fetch fresh data
-    console.log(`Fetching fresh price for ${symbol}...`);
+    console.log(`Fetching fresh price for ${formattedSymbol}...`);
     const { data, error: invocationError } = await supabase.functions.invoke('fetch-coincap-prices', {
-      body: { symbols: [symbol] }
+      body: { symbols: [formattedSymbol] }
     });
 
     if (invocationError) {
@@ -40,8 +45,8 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
     }
 
     // Get the latest price after fetching fresh data
-    const updatedPrice = await fetchPriceFromDB(symbol);
-    console.log(`Updated price for ${symbol}:`, updatedPrice);
+    const updatedPrice = await fetchPriceFromDB(formattedSymbol);
+    console.log(`Updated price for ${formattedSymbol}:`, updatedPrice);
     return updatedPrice;
   } catch (error) {
     console.error(`Failed to fetch price for ${symbol}:`, error);
