@@ -15,6 +15,21 @@ export const CryptoPriceTest = () => {
     }))
   });
 
+  const formatPrice = (price: number | null) => {
+    if (price === null) return 'N/A';
+    
+    // For very small numbers (less than 0.01), use scientific notation
+    if (price < 0.01) {
+      return `$${price.toFixed(8)}`;
+    }
+    
+    // For regular numbers, use locale string with appropriate decimals
+    return `$${price.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 8
+    })}`;
+  };
+
   return (
     <Card className="p-6">
       <h2 className="text-2xl font-semibold mb-4">Crypto Price Test</h2>
@@ -30,7 +45,7 @@ export const CryptoPriceTest = () => {
               </span>
             ) : (
               <span className="text-green-600">
-                ${result.data?.toLocaleString() || 'N/A'}
+                {formatPrice(result.data)}
               </span>
             )}
           </div>
