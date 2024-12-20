@@ -5,6 +5,21 @@ import { useQueries } from "@tanstack/react-query";
 import { API_CONFIG, formatCryptoSymbol } from "@/utils/crypto-utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
+interface CryptoApiResponse {
+  error: number;
+  message: string;
+  data: {
+    symbol: string;
+    base: string;
+    price: string;
+    exchanges: Array<{
+      price: string;
+      exchange: string;
+      deviation: string;
+    }>;
+  };
+}
+
 const fetchCryptoPrice = async (symbol: string | null) => {
   if (!symbol) return null;
   
@@ -30,15 +45,15 @@ const fetchCryptoPrice = async (symbol: string | null) => {
       return null;
     }
 
-    const data = await response.json();
-    console.log(`Price data received for ${symbol}:`, data);
+    const responseData: CryptoApiResponse = await response.json();
+    console.log(`Price data received for ${symbol}:`, responseData);
     
-    if (!data || typeof data.price !== 'number') {
-      console.error(`Invalid price data for ${symbol}:`, data);
+    if (!responseData.data || !responseData.data.price) {
+      console.error(`Invalid price data for ${symbol}:`, responseData);
       return null;
     }
 
-    return data.price;
+    return parseFloat(responseData.data.price);
   } catch (error) {
     console.error(`Failed to fetch price for ${symbol}:`, error);
     return null;
