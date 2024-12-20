@@ -16,19 +16,18 @@ export const CryptoPriceTest = () => {
   });
 
   const formatPrice = (price: number | null | undefined) => {
-    // Log the incoming price for debugging
-    console.log('Formatting price:', price, typeof price);
-    
-    // Handle null/undefined/zero cases
     if (price === null || price === undefined) return 'N/A';
-    if (price === 0) return '$0.00';
     
     try {
       const numPrice = Number(price);
       
       // For extremely small numbers (less than 0.0001)
       if (numPrice < 0.0001) {
-        return `$${numPrice.toFixed(8)}`;
+        const scientificStr = numPrice.toExponential(8);
+        const [base, exponent] = scientificStr.split('e');
+        const baseNum = parseFloat(base);
+        const formattedBase = baseNum.toFixed(8);
+        return `$${formattedBase}`;
       }
       
       // For small numbers (less than 1)
@@ -43,7 +42,6 @@ export const CryptoPriceTest = () => {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
       }).format(numPrice);
-      
     } catch (error) {
       console.error('Error formatting price:', error, 'Price value:', price);
       return 'Error';
