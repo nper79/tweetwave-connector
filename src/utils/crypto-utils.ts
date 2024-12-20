@@ -49,17 +49,7 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
   try {
     console.log(`Fetching current price for ${symbol}...`);
     
-    // Try to invoke the edge function to fetch fresh prices
-    const { data, error: invocationError } = await supabase.functions.invoke('fetch-coincap-prices', {
-      body: { symbols: [symbol] }
-    });
-
-    if (invocationError) {
-      console.error('Error invoking edge function:', invocationError);
-      throw invocationError;
-    }
-
-    // Get the latest price from the database after the edge function has run
+    // First try to get the latest price from the database
     const { data: prices, error: dbError } = await supabase
       .from('historical_prices')
       .select('*')
@@ -72,9 +62,43 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
       throw dbError;
     }
 
+    // If we have a recent price (less than 30 seconds old), use it
     if (prices && prices.length > 0) {
-      console.log(`Found price for ${symbol}:`, prices[0].price);
-      return prices[0].price;
+      const price = prices[0];
+      const priceAge = Date.now() - new Date(price.timestamp).getTime();
+      if (priceAge < 30000) { // 30 seconds
+        console.log(`Found recent price for ${symbol}:`, price.price);
+        return price.price;
+      }
+    }
+
+    // If we don't have a recent price, fetch fresh data
+    console.log(`Fetching fresh price for ${symbol}...`);
+    const { data, error: invocationError } = await supabase.functions.invoke('fetch-coincap-prices', {
+      body: { symbols: [symbol] }
+    });
+
+    if (invocationError) {
+      console.error('Error invoking edge function:', invocationError);
+      throw invocationError;
+    }
+
+    // Get the latest price after fetching fresh data
+    const { data: freshPrices, error: freshError } = await supabase
+      .from('historical_prices')
+      .select('*')
+      .eq('symbol', formatCryptoSymbol(symbol))
+      .order('timestamp', { ascending: false })
+      .limit(1);
+
+    if (freshError) {
+      console.error('Error fetching fresh price:', freshError);
+      throw freshError;
+    }
+
+    if (freshPrices && freshPrices.length > 0) {
+      console.log(`Found fresh price for ${symbol}:`, freshPrices[0].price);
+      return freshPrices[0].price;
     }
 
     console.log(`No price found for ${symbol}`);
