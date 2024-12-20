@@ -22,11 +22,27 @@ serve(async (req) => {
     const cryptos = ['BTC', 'ETH', 'SOL', 'XRP', 'PEPE', 'FLOKI'];
     const prices = [];
 
+    // Coin UUIDs mapping
+    const coinUuids = {
+      'BTC': 'Qwsogvtv82FCd',  // Bitcoin
+      'ETH': 'razxDUgYGNAdQ',  // Ethereum
+      'SOL': 'zNZHO_Sjf',      // Solana
+      'XRP': '-l8Mn2pVlRs-p',  // XRP
+      'PEPE': 'IwYmAqFJoqxzn', // PEPE
+      'FLOKI': 'SXX4mDM_9yOC1' // FLOKI
+    };
+
     for (const symbol of cryptos) {
       console.log(`Fetching ${symbol} price...`);
+      const uuid = coinUuids[symbol];
+      
+      if (!uuid) {
+        console.error(`No UUID found for ${symbol}`);
+        continue;
+      }
       
       try {
-        const response = await fetch(`https://coinranking1.p.rapidapi.com/coin/Qwsogvtv82FCd/price`, {
+        const response = await fetch(`https://coinranking1.p.rapidapi.com/coin/${uuid}/price`, {
           headers: {
             'x-rapidapi-host': 'coinranking1.p.rapidapi.com',
             'x-rapidapi-key': apiKey
