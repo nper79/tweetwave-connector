@@ -31,7 +31,8 @@ const fetchCryptoPrice = async (symbol: string | null) => {
     }
 
     const data = await response.json();
-    return data.price || null;
+    console.log('Price data received:', data); // Debug log
+    return data?.price || null;
   } catch (error) {
     console.error(`Failed to fetch price for ${symbol}:`, error);
     return null;
@@ -54,7 +55,7 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
     queries: uniqueCryptos.map(crypto => ({
       queryKey: ['crypto-price', crypto],
       queryFn: () => fetchCryptoPrice(crypto),
-      refetchInterval: 30000,
+      refetchInterval: 30000, // Refresh every 30 seconds
       retry: 2,
       retryDelay: 1000,
     })),
@@ -64,7 +65,8 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
     if (!symbol) return "---";
     const queryIndex = uniqueCryptos.indexOf(symbol);
     if (queryIndex === -1) return "---";
-    return priceQueries[queryIndex].data;
+    const price = priceQueries[queryIndex].data;
+    return price ? `$${Number(price).toLocaleString()}` : "Loading...";
   };
 
   if (tweetsLoading || predictionsLoading) {
@@ -108,11 +110,7 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
             <TableRow key={`${prediction.crypto}-${prediction.predictionDate}`}>
               <TableCell className="font-medium">{prediction.crypto || "---"}</TableCell>
               <TableCell>${prediction.priceAtPrediction?.toLocaleString() || "---"}</TableCell>
-              <TableCell>
-                {getCurrentPrice(prediction.symbol) 
-                  ? `$${Number(getCurrentPrice(prediction.symbol)).toLocaleString()}`
-                  : '---'}
-              </TableCell>
+              <TableCell>{getCurrentPrice(prediction.symbol)}</TableCell>
               <TableCell className="text-green-500">+{prediction.roi24h}%</TableCell>
               <TableCell className="text-green-500">+{prediction.roi3d}%</TableCell>
               <TableCell className="text-green-500">+{prediction.roi1w}%</TableCell>
