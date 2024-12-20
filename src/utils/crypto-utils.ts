@@ -7,8 +7,8 @@ const exchange = new ccxt.binance({
     defaultType: 'spot', // Use spot markets
     warnOnFetchOHLCVLimitArgument: false,
     createMarketBuyOrderRequiresPrice: false,
-    fetchImplementation: async (url, options = {}, headers = {}) => {
-      return fetch(url, { ...options, headers: { ...headers, ...options.headers } });
+    fetchImplementation: async (url: string, options: RequestInit = {}, headers: Record<string, string> = {}) => {
+      return fetch(url, { ...options, headers: { ...headers, ...(options.headers || {}) } });
     },
   },
 });
