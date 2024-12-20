@@ -7,6 +7,7 @@ const exchange = new ccxt.binance({
     defaultType: 'spot',
     warnOnFetchOHLCVLimitArgument: false,
     createMarketBuyOrderRequiresPrice: false,
+    defaultFetchImplementation: 'fetch',
     fetchImplementation: async (url: string, options: RequestInit = {}, headers: Record<string, string> = {}) => {
       return fetch(url, { 
         ...options, 
