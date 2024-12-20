@@ -9,6 +9,8 @@ export const CryptoPriceTest = () => {
     queryKey: ['crypto-price-test', symbol],
     queryFn: () => fetchCryptoPrice(symbol),
     refetchInterval: 30000,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   }));
 
   const results = queries.map(query => useQuery(query));
@@ -23,7 +25,9 @@ export const CryptoPriceTest = () => {
             {result.isLoading ? (
               <span>Loading...</span>
             ) : result.isError ? (
-              <span className="text-red-500">Error fetching price</span>
+              <span className="text-red-500">
+                Error: {result.error?.message || 'Failed to fetch price'}
+              </span>
             ) : (
               <span className="text-green-600">
                 ${result.data?.toLocaleString() || 'N/A'}

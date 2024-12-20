@@ -48,6 +48,8 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
   if (!symbol) return null;
   
   try {
+    console.log(`Fetching current price for ${symbol}...`);
+    
     // Get the most recent price from our database
     const { data: prices, error: dbError } = await supabase
       .from('historical_prices')
@@ -57,7 +59,7 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
       .limit(1);
 
     if (dbError) {
-      console.error('Database error:', dbError);
+      console.error('Database error when fetching price:', dbError);
       throw dbError;
     }
 
@@ -67,10 +69,10 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
       return price.price;
     }
 
-    console.log('No price found in database');
+    console.log(`No price found in database for ${symbol}`);
     return null;
   } catch (error) {
-    console.error('Failed to fetch price:', error);
+    console.error(`Failed to fetch price for ${symbol}:`, error);
     return null;
   }
 };
