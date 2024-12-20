@@ -25,6 +25,7 @@ export const formatPrice = (price: number | null | undefined) => {
       maximumFractionDigits: 2
     }).format(numPrice);
   } catch (error) {
+    console.error('Error formatting price:', error);
     return 'N/A';
   }
 };
@@ -37,20 +38,26 @@ export const fetchPriceFromDB = async (symbol: string, timestamp?: number) => {
       .eq('symbol', symbol);
 
     if (timestamp) {
-      const startTime = new Date(timestamp - 12 * 60 * 60 * 1000);
-      const endTime = new Date(timestamp + 12 * 60 * 60 * 1000);
+      // Expand the time window to find the closest price
+      const startTime = new Date(timestamp - 24 * 60 * 60 * 1000); // 24h before
+      const endTime = new Date(timestamp + 24 * 60 * 60 * 1000);   // 24h after
       
       query = query
         .gte('timestamp', startTime.toISOString())
         .lte('timestamp', endTime.toISOString())
-        .order('timestamp', { ascending: true });
+        .order('timestamp', { ascending: false });
     } else {
-      query = query.order('timestamp', { ascending: false });
+      // For current price, get the most recent one
+      query = query
+        .order('timestamp', { ascending: false });
     }
 
     const { data: prices, error: dbError } = await query.limit(1);
 
-    if (dbError) throw dbError;
+    if (dbError) {
+      console.error('Database error:', dbError);
+      return null;
+    }
 
     if (prices && prices.length > 0) {
       return prices[0].price;
@@ -58,6 +65,7 @@ export const fetchPriceFromDB = async (symbol: string, timestamp?: number) => {
 
     return null;
   } catch (error) {
+    console.error('Error fetching price from DB:', error);
     return null;
   }
 };
