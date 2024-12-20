@@ -1,20 +1,15 @@
-import ccxt from 'ccxt';
+import { supabase } from "@/integrations/supabase/client";
 
-// Initialize Binance exchange with browser-compatible configuration
-const exchange = new ccxt.binance({
-  enableRateLimit: true,
-  // Disable proxy support since we're in browser environment
-  proxyAgent: false,
-  options: {
-    defaultType: 'spot',
-    warnOnFetchOHLCVLimitArgument: false,
-    createMarketBuyOrderRequiresPrice: false,
-  },
-});
+let API_KEY: string | null = null;
 
-// Set headers for browser environment
-exchange.headers = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+const getApiKey = async (): Promise<string> => {
+  if (API_KEY) return API_KEY;
+  
+  const { data: { apiKey }, error } = await supabase.functions.invoke('get-livecoinwatch-key');
+  if (error) throw error;
+  
+  API_KEY = apiKey;
+  return apiKey;
 };
 
 export const formatCryptoSymbol = (code: string | null): string | null => {
@@ -23,18 +18,8 @@ export const formatCryptoSymbol = (code: string | null): string | null => {
   // Remove any $ prefix if present
   const cleanCode = code.replace('$', '');
   
-  // Map common symbols to their CCXT-compatible format
-  const symbolMap: { [key: string]: string } = {
-    'BTC': 'BTC/USDT',
-    'ETH': 'ETH/USDT',
-    'SOL': 'SOL/USDT',
-    'ORAI': 'ORAI/USDT',
-    'HBAR': 'HBAR/USDT',
-    'FIL': 'FIL/USDT',
-    'LDO': 'LDO/USDT',
-  };
-
-  return symbolMap[cleanCode] || `${cleanCode}/USDT`;
+  // Return the clean code
+  return cleanCode;
 };
 
 export const fetchHistoricalPrice = async (symbol: string, timestamp: number): Promise<number | null> => {
@@ -44,31 +29,36 @@ export const fetchHistoricalPrice = async (symbol: string, timestamp: number): P
 
     console.log(`Fetching historical price for ${formattedSymbol} at ${new Date(timestamp).toISOString()}`);
 
-    // CCXT requires timestamp in milliseconds
-    const since = timestamp - 300000; // 5 minutes before
-    const limit = 10; // Number of candles to fetch
+    const apiKey = await getApiKey();
+    const response = await fetch('https://api.livecoinwatch.com/coins/single/history', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        currency: 'USD',
+        code: formattedSymbol,
+        start: timestamp,
+        end: timestamp + 300000, // 5 minutes after to ensure we get a price
+        meta: false,
+      }),
+    });
 
-    const ohlcv = await exchange.fetchOHLCV(
-      formattedSymbol,
-      '1m', // 1-minute timeframe
-      since,
-      limit
-    );
-
-    if (!ohlcv || ohlcv.length === 0) {
-      console.error(`No historical price data found for ${symbol} at ${new Date(timestamp).toISOString()}`);
+    if (!response.ok) {
+      console.error('Failed to fetch historical price:', await response.text());
       return null;
     }
 
-    // Find the closest candle to the target timestamp
-    const targetCandle = ohlcv.reduce((prev, curr) => {
-      return Math.abs(curr[0] - timestamp) < Math.abs(prev[0] - timestamp) ? curr : prev;
-    });
+    const data = await response.json();
+    if (!data || !data.history || data.history.length === 0) {
+      console.error('No historical price data found');
+      return null;
+    }
 
-    // Return the closing price of the closest candle
-    return targetCandle[4];
+    return data.history[0].rate;
   } catch (error) {
-    console.error(`Failed to fetch historical price for ${symbol}:`, error);
+    console.error('Error fetching historical price:', error);
     return null;
   }
 };
@@ -82,16 +72,29 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
     
     console.log(`Fetching current price for symbol: ${formattedSymbol}`);
     
-    const ticker = await exchange.fetchTicker(formattedSymbol);
-    
-    if (!ticker || typeof ticker.last !== 'number') {
-      console.error(`Invalid price data received for ${symbol}:`, ticker);
+    const apiKey = await getApiKey();
+    const response = await fetch('https://api.livecoinwatch.com/coins/single', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        currency: 'USD',
+        code: formattedSymbol,
+        meta: false,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch current price:', await response.text());
       return null;
     }
-    
-    return ticker.last;
+
+    const data = await response.json();
+    return data.rate;
   } catch (error) {
-    console.error(`Failed to fetch current price for ${symbol}:`, error);
+    console.error('Failed to fetch current price:', error);
     return null;
   }
 };
