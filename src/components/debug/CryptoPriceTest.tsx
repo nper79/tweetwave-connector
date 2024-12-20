@@ -23,7 +23,7 @@ export const CryptoPriceTest = () => {
           <div key={TEST_CRYPTOS[index]} className="flex justify-between items-center border-b pb-2">
             <span className="font-medium">{TEST_CRYPTOS[index]}:</span>
             {result.isLoading ? (
-              <span>Loading...</span>
+              <span className="text-yellow-500">Loading...</span>
             ) : result.isError ? (
               <span className="text-red-500">
                 Error: {result.error?.message || 'Failed to fetch price'}
