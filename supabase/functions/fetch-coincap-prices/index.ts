@@ -23,14 +23,12 @@ serve(async (req) => {
     const prices = [];
 
     for (const symbol of cryptos) {
-      // Use the /tokens endpoint for all cryptocurrencies
-      const endpoint = `https://crypto-market-prices.p.rapidapi.com/tokens/${symbol}`;
-      console.log(`Fetching ${symbol} price from endpoint:`, endpoint);
+      console.log(`Fetching ${symbol} price...`);
       
       try {
-        const response = await fetch(endpoint, {
+        const response = await fetch(`https://coinranking1.p.rapidapi.com/coin/Qwsogvtv82FCd/price`, {
           headers: {
-            'x-rapidapi-host': 'crypto-market-prices.p.rapidapi.com',
+            'x-rapidapi-host': 'coinranking1.p.rapidapi.com',
             'x-rapidapi-key': apiKey
           }
         });
