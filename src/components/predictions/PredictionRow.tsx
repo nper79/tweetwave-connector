@@ -1,17 +1,11 @@
 import { TableCell, TableRow } from "@/components/ui/table";
-import { useQuery } from "@tanstack/react-query";
-import { fetchCryptoPrice } from "@/utils/crypto-utils";
-import { formatPrice } from "@/utils/price-utils";
-import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { ArrowUpIcon } from "lucide-react";
 
 interface PredictionRowProps {
   prediction: {
     crypto: string;
-    symbol: string;
     priceAtPrediction: number;
     targetPrice: number;
-    predictionDate: number;
     roi24h: number;
     roi3d: number;
     roi1w: number;
@@ -20,107 +14,34 @@ interface PredictionRowProps {
 }
 
 export const PredictionRow = ({ prediction }: PredictionRowProps) => {
-  const { data: currentPrice, isLoading, isError } = useQuery({
-    queryKey: ['crypto-price', prediction.crypto],
-    queryFn: async () => {
-      console.log(`Fetching current price for ${prediction.crypto}...`);
-      const price = await fetchCryptoPrice(prediction.crypto);
-      console.log(`Received price for ${prediction.crypto}:`, price);
-      return price;
-    },
-    refetchInterval: 30000,
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    staleTime: 20000,
-    enabled: !!prediction.crypto
-  });
-
-  if (isLoading) {
-    return (
-      <TableRow>
-        <TableCell className="font-medium">{prediction.crypto}</TableCell>
-        <TableCell>{formatPrice(prediction.priceAtPrediction)}</TableCell>
-        <TableCell>
-          <Skeleton className="h-6 w-24" />
-        </TableCell>
-        <TableCell>
-          <div className="text-green-500 flex items-center gap-1">
-            <TrendingUp className="h-4 w-4" />
-            +{prediction.roi24h}%
-          </div>
-        </TableCell>
-        <TableCell>
-          <div className="text-green-500 flex items-center gap-1">
-            <TrendingUp className="h-4 w-4" />
-            +{prediction.roi3d}%
-          </div>
-        </TableCell>
-        <TableCell>
-          <div className="text-green-500 flex items-center gap-1">
-            <TrendingUp className="h-4 w-4" />
-            +{prediction.roi1w}%
-          </div>
-        </TableCell>
-        <TableCell>
-          <div className="text-green-500 flex items-center gap-1">
-            <TrendingUp className="h-4 w-4" />
-            +{prediction.roi1m}%
-          </div>
-        </TableCell>
-      </TableRow>
-    );
-  }
-
-  if (isError) {
-    return (
-      <TableRow>
-        <TableCell className="font-medium">{prediction.crypto}</TableCell>
-        <TableCell>{formatPrice(prediction.priceAtPrediction)}</TableCell>
-        <TableCell className="text-red-500">Error fetching price</TableCell>
-        <TableCell colSpan={4} className="text-center text-gray-500">
-          Unable to calculate ROI
-        </TableCell>
-      </TableRow>
-    );
-  }
-
-  const calculateRoi = () => {
-    if (!currentPrice || !prediction.priceAtPrediction) return 0;
-    return ((currentPrice - prediction.priceAtPrediction) / prediction.priceAtPrediction) * 100;
+  const formatPrice = (price: number) => {
+    return price < 1 ? `$${price.toFixed(6)}` : `$${price.toFixed(2)}`;
   };
 
-  const roi = calculateRoi();
-  const isPositive = roi >= 0;
+  const formatROI = (roi: number) => {
+    return (
+      <div className="flex items-center gap-1 text-green-500">
+        <ArrowUpIcon className="h-4 w-4" />
+        <span>+{roi.toFixed(2)}%</span>
+      </div>
+    );
+  };
 
   return (
-    <TableRow>
-      <TableCell className="font-medium">{prediction.crypto}</TableCell>
-      <TableCell>{formatPrice(prediction.priceAtPrediction)}</TableCell>
-      <TableCell>{formatPrice(currentPrice)}</TableCell>
-      <TableCell>
-        <div className={`flex items-center gap-1 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-          {isPositive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-          {isPositive ? '+' : ''}{prediction.roi24h}%
-        </div>
+    <TableRow className="border-b dark:border-gray-800">
+      <TableCell className="font-medium text-gray-900 dark:text-gray-100">
+        {prediction.crypto}
       </TableCell>
-      <TableCell>
-        <div className={`flex items-center gap-1 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-          {isPositive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-          {isPositive ? '+' : ''}{prediction.roi3d}%
-        </div>
+      <TableCell className="text-gray-900 dark:text-gray-100">
+        {formatPrice(prediction.priceAtPrediction)}
       </TableCell>
-      <TableCell>
-        <div className={`flex items-center gap-1 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-          {isPositive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-          {isPositive ? '+' : ''}{prediction.roi1w}%
-        </div>
+      <TableCell className="text-gray-900 dark:text-gray-100">
+        {formatPrice(prediction.targetPrice)}
       </TableCell>
-      <TableCell>
-        <div className={`flex items-center gap-1 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-          {isPositive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-          {isPositive ? '+' : ''}{prediction.roi1m}%
-        </div>
-      </TableCell>
+      <TableCell>{formatROI(prediction.roi24h)}</TableCell>
+      <TableCell>{formatROI(prediction.roi3d)}</TableCell>
+      <TableCell>{formatROI(prediction.roi1w)}</TableCell>
+      <TableCell>{formatROI(prediction.roi1m)}</TableCell>
     </TableRow>
   );
 };

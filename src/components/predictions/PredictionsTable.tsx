@@ -27,7 +27,7 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
         
         return {
           crypto: p.prediction.crypto,
-          symbol: `${p.prediction.crypto}USDT`, // Append USDT to match Binance format
+          symbol: `${p.prediction.crypto}USDT`,
           priceAtPrediction: historicalPrice || p.prediction.price_at_prediction,
           targetPrice: p.prediction.target_price,
           predictionDate: new Date(p.prediction.prediction_date).getTime(),
@@ -46,25 +46,25 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
   if (tweetsLoading || predictionsLoading) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full dark:bg-gray-700" />
+        <Skeleton className="h-8 w-full dark:bg-gray-700" />
+        <Skeleton className="h-8 w-full dark:bg-gray-700" />
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-lg bg-white dark:bg-gray-900 shadow-sm">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead>CRYPTO</TableHead>
-            <TableHead>PRICE AT PREDICTION</TableHead>
-            <TableHead>CURRENT PRICE</TableHead>
-            <TableHead>24H ROI</TableHead>
-            <TableHead>3D ROI</TableHead>
-            <TableHead>1W ROI</TableHead>
-            <TableHead>1M ROI</TableHead>
+          <TableRow className="border-b dark:border-gray-800">
+            <TableHead className="text-gray-500 dark:text-gray-400">CRYPTO</TableHead>
+            <TableHead className="text-gray-500 dark:text-gray-400">PRICE AT PREDICTION</TableHead>
+            <TableHead className="text-gray-500 dark:text-gray-400">CURRENT PRICE</TableHead>
+            <TableHead className="text-gray-500 dark:text-gray-400">24H ROI</TableHead>
+            <TableHead className="text-gray-500 dark:text-gray-400">3D ROI</TableHead>
+            <TableHead className="text-gray-500 dark:text-gray-400">1W ROI</TableHead>
+            <TableHead className="text-gray-500 dark:text-gray-400">1M ROI</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
