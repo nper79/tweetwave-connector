@@ -31,10 +31,14 @@ serve(async (req) => {
     const timestamp = new Date().toISOString();
     const prices = [];
 
-    // Try multiple sources for each symbol
-    for (const symbol of symbols) {
+    // Process all symbols concurrently using Promise.all
+    await Promise.all(symbols.map(async (symbol) => {
       console.log(`Processing ${symbol}...`);
       let price = null;
+
+      // Generate a unique request ID for this symbol
+      const requestId = `${symbol}-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      console.log(`Request ID for ${symbol}: ${requestId}`);
 
       // 1. Try Binance first
       try {
@@ -43,11 +47,11 @@ serve(async (req) => {
           const binanceData = await binanceResponse.json();
           if (binanceData.price) {
             price = parseFloat(binanceData.price);
-            console.log(`Found Binance price for ${symbol}:`, price);
+            console.log(`[${requestId}] Found Binance price for ${symbol}:`, price);
           }
         }
       } catch (error) {
-        console.error(`Binance error for ${symbol}:`, error);
+        console.error(`[${requestId}] Binance error for ${symbol}:`, error);
       }
 
       // 2. Try CoinGecko if Binance fails
@@ -58,11 +62,11 @@ serve(async (req) => {
             const geckoData = await geckoResponse.json();
             if (geckoData[symbol.toLowerCase()]?.usd) {
               price = geckoData[symbol.toLowerCase()].usd;
-              console.log(`Found CoinGecko price for ${symbol}:`, price);
+              console.log(`[${requestId}] Found CoinGecko price for ${symbol}:`, price);
             }
           }
         } catch (error) {
-          console.error(`CoinGecko error for ${symbol}:`, error);
+          console.error(`[${requestId}] CoinGecko error for ${symbol}:`, error);
         }
       }
 
@@ -74,11 +78,11 @@ serve(async (req) => {
             const coincapData = await coincapResponse.json();
             if (coincapData.data?.priceUsd) {
               price = parseFloat(coincapData.data.priceUsd);
-              console.log(`Found CoinCap price for ${symbol}:`, price);
+              console.log(`[${requestId}] Found CoinCap price for ${symbol}:`, price);
             }
           }
         } catch (error) {
-          console.error(`CoinCap error for ${symbol}:`, error);
+          console.error(`[${requestId}] CoinCap error for ${symbol}:`, error);
         }
       }
 
@@ -89,24 +93,26 @@ serve(async (req) => {
           timestamp
         });
 
-        // Store price in database
+        // Store price in database using upsert to handle concurrent writes
         const { error: insertError } = await supabase
           .from('historical_prices')
-          .insert({
+          .upsert({
             symbol,
             price,
             timestamp
+          }, {
+            onConflict: 'symbol,timestamp'
           });
 
         if (insertError) {
-          console.error(`Error storing price for ${symbol}:`, insertError);
+          console.error(`[${requestId}] Error storing price for ${symbol}:`, insertError);
         } else {
-          console.log(`Successfully stored price for ${symbol}`);
+          console.log(`[${requestId}] Successfully stored price for ${symbol}`);
         }
       } else {
-        console.log(`No price found for ${symbol} from any source`);
+        console.log(`[${requestId}] No price found for ${symbol} from any source`);
       }
-    }
+    }));
 
     return new Response(
       JSON.stringify({ success: true, count: prices.length, prices }),
@@ -116,7 +122,10 @@ serve(async (req) => {
     console.error('Error in Edge Function:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 500 
+      }
     );
   }
 });
