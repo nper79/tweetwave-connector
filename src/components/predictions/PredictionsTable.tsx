@@ -2,7 +2,7 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components
 import { useTwitterTimeline } from "@/hooks/use-twitter";
 import { usePredictions } from "@/hooks/use-predictions";
 import { useQuery } from "@tanstack/react-query";
-import { formatCryptoSymbol, fetchHistoricalPrice } from "@/utils/crypto-utils";
+import { fetchHistoricalPrice } from "@/utils/crypto-utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PredictionRow } from "./PredictionRow";
 
@@ -27,7 +27,7 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
         
         return {
           crypto: p.prediction.crypto,
-          symbol: p.prediction.crypto,
+          symbol: `${p.prediction.crypto}USDT`, // Append USDT to match Binance format
           priceAtPrediction: historicalPrice || p.prediction.price_at_prediction,
           targetPrice: p.prediction.target_price,
           predictionDate: new Date(p.prediction.prediction_date).getTime(),

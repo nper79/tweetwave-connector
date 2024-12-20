@@ -3,17 +3,20 @@ import { supabase } from "@/integrations/supabase/client";
 export const formatCryptoSymbol = (code: string | null): string | null => {
   if (!code) return null;
   const cleanCode = code.replace('$', '').toUpperCase();
-  return cleanCode;
+  return `${cleanCode}USDT`; // Always append USDT to match Binance format
 };
 
 export const fetchHistoricalPrice = async (symbol: string, timestamp: number): Promise<number | null> => {
   try {
     console.log(`Fetching historical price for ${symbol}`);
     
+    const formattedSymbol = formatCryptoSymbol(symbol);
+    console.log('Formatted symbol:', formattedSymbol);
+    
     const { data: prices, error: dbError } = await supabase
       .from('historical_prices')
       .select('*')
-      .eq('symbol', formatCryptoSymbol(symbol))
+      .eq('symbol', symbol) // Use original symbol for historical prices
       .gte('timestamp', new Date(timestamp - 24 * 60 * 60 * 1000).toISOString())
       .lte('timestamp', new Date(timestamp + 24 * 60 * 60 * 1000).toISOString())
       .order('timestamp', { ascending: true });
@@ -48,12 +51,14 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
   
   try {
     console.log(`Fetching current price for ${symbol}...`);
+    const formattedSymbol = formatCryptoSymbol(symbol);
+    console.log('Formatted symbol for price fetch:', formattedSymbol);
     
     // First try to get the latest price from the database
     const { data: prices, error: dbError } = await supabase
       .from('historical_prices')
       .select('*')
-      .eq('symbol', formatCryptoSymbol(symbol))
+      .eq('symbol', symbol) // Use original symbol for querying
       .order('timestamp', { ascending: false })
       .limit(1);
 
@@ -87,7 +92,7 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
     const { data: freshPrices, error: freshError } = await supabase
       .from('historical_prices')
       .select('*')
-      .eq('symbol', formatCryptoSymbol(symbol))
+      .eq('symbol', symbol)
       .order('timestamp', { ascending: false })
       .limit(1);
 
