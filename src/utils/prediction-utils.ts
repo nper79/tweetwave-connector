@@ -34,20 +34,12 @@ export const isPredictionTweet = (tweet: Tweet | null): tweet is Tweet => {
   const text = tweet.text.toLowerCase();
   const isPrediction = hasCryptoSymbol(tweet.text) && (hasPredictionKeyword(text) || hasTechnicalAnalysis(text));
   
-  // Only log if it's not a prediction
-  if (!isPrediction && hasCryptoSymbol(tweet.text)) {
-    console.log('Tweet contains crypto symbol but no prediction:', tweet.text);
-  }
-  
   return isPrediction;
 };
 
 export const extractCryptoSymbol = (text: string): string => {
   const match = text.match(/\$[A-Z]{2,}/);
-  if (!match) {
-    console.log('No crypto symbol found in text:', text);
-    return 'BTC';
-  }
+  if (!match) return 'BTC';
   return match[0].replace(/^\$/, '');
 };
 
