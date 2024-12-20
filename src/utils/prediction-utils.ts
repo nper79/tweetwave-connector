@@ -38,7 +38,9 @@ export const isPredictionTweet = (tweet: Tweet | null): tweet is Tweet => {
 
 export const extractCryptoSymbol = (text: string): string => {
   const match = text.match(/\$[A-Z]{2,}/);
-  return match ? match[0].substring(1) : 'BTC';
+  if (!match) return 'BTC';
+  // Remove $ and return clean symbol without USDT
+  return match[0].substring(1).replace('USDT', '');
 };
 
 export const extractTargetPrice = (text: string): number | null => {
