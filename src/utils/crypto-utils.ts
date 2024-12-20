@@ -60,7 +60,13 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
     console.log(`Fetching current price for symbol: ${formattedSymbol}`);
     
     const data = await fetchFromLiveCoinWatch('single', formattedSymbol);
-    return data.rate || null;
+    
+    if (!data || typeof data.rate !== 'number') {
+      console.error(`Invalid price data received for ${symbol}:`, data);
+      return null;
+    }
+    
+    return data.rate;
   } catch (error) {
     console.error(`Failed to fetch current price for ${symbol}:`, error);
     return null;
