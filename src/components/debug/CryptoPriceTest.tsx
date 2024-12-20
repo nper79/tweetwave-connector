@@ -18,9 +18,9 @@ export const CryptoPriceTest = () => {
   const formatPrice = (price: number | null) => {
     if (price === null) return 'N/A';
     
-    // For very small numbers (less than 0.0001), use scientific notation
+    // For extremely small numbers (less than 0.0001), show all significant digits
     if (price < 0.0001) {
-      return price.toExponential(6);
+      return `$${price.toFixed(8)}`;
     }
     
     // For small numbers (less than 0.01), show more decimals
@@ -40,10 +40,11 @@ export const CryptoPriceTest = () => {
       <h2 className="text-2xl font-semibold mb-4">Crypto Price Test</h2>
       <div className="space-y-4">
         {results.map((result, index) => {
-          console.log(`${TEST_CRYPTOS[index]} price:`, result.data); // Add logging for debugging
+          const symbol = TEST_CRYPTOS[index];
+          console.log(`${symbol} price:`, result.data, 'formatted:', result.data ? formatPrice(result.data) : 'N/A');
           return (
-            <div key={TEST_CRYPTOS[index]} className="flex justify-between items-center border-b pb-2">
-              <span className="font-medium">{TEST_CRYPTOS[index]}:</span>
+            <div key={symbol} className="flex justify-between items-center border-b pb-2">
+              <span className="font-medium">{symbol}:</span>
               {result.isLoading ? (
                 <span className="text-yellow-500">Loading...</span>
               ) : result.isError ? (
