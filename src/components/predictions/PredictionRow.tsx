@@ -17,12 +17,12 @@ interface PredictionRowProps {
 }
 
 export const PredictionRow = ({ prediction }: PredictionRowProps) => {
-  const { data: currentPrice, isLoading } = useQuery({
+  const { data: currentPrice, isLoading, isError, error } = useQuery({
     queryKey: ['crypto-price', prediction.symbol],
     queryFn: () => fetchCryptoPrice(prediction.symbol),
     refetchInterval: 30000,
-    retry: 2,
-    retryDelay: 1000,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     staleTime: 20000,
   });
 
@@ -36,7 +36,13 @@ export const PredictionRow = ({ prediction }: PredictionRowProps) => {
       <TableCell className="font-medium">{prediction.crypto || "---"}</TableCell>
       <TableCell>${prediction.priceAtPrediction?.toLocaleString() || "---"}</TableCell>
       <TableCell>
-        {isLoading ? "Loading..." : formatPrice(currentPrice)}
+        {isLoading ? (
+          <span className="text-gray-500">Loading...</span>
+        ) : isError ? (
+          <span className="text-gray-500">Fetching price...</span>
+        ) : (
+          formatPrice(currentPrice)
+        )}
       </TableCell>
       <TableCell className="text-green-500">+{prediction.roi24h}%</TableCell>
       <TableCell className="text-green-500">+{prediction.roi3d}%</TableCell>
