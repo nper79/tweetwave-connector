@@ -16,8 +16,11 @@ export const useTwitterTimeline = (screenname: string = "elonmusk") => {
           method: 'GET',
           headers: {
             'x-rapidapi-key': RAPID_API_KEY,
-            'x-rapidapi-host': RAPID_API_HOST
-          }
+            'x-rapidapi-host': RAPID_API_HOST,
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          },
+          cache: 'no-store' as RequestCache
         };
 
         const response = await fetch(
@@ -47,9 +50,10 @@ export const useTwitterTimeline = (screenname: string = "elonmusk") => {
         throw error;
       }
     },
-    retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    retry: 1,
+    retryDelay: 1000,
     refetchOnWindowFocus: false,
-    staleTime: 300000 // 5 minutes
+    staleTime: 30000, // 30 seconds
+    cacheTime: 60000, // 1 minute
   });
 };

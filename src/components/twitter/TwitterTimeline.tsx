@@ -6,24 +6,34 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TweetCard } from "./TweetCard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Tweet } from "@/types/twitter";
 
 interface TwitterTimelineProps {
   username?: string;
 }
 
 export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps) => {
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const { data: tweets, isLoading, error, refetch } = useTwitterTimeline(username);
   const { data: predictions } = usePredictions(tweets || []);
 
   useEffect(() => {
-    if (!tweets && !isLoading) {
-      console.log('Initial fetch for:', username);
-      refetch().catch(error => {
-        console.error('Error during initial fetch:', error);
-      });
-    }
-  }, [username]); // Only depend on username changes
+    const initializeFetch = async () => {
+      if (isInitialLoad && !tweets && !isLoading) {
+        console.log('Initial fetch for:', username);
+        try {
+          await refetch();
+        } catch (error) {
+          console.error('Error during initial fetch:', error);
+        } finally {
+          setIsInitialLoad(false);
+        }
+      }
+    };
+
+    initializeFetch();
+  }, [username, isInitialLoad, tweets, isLoading, refetch]);
 
   if (isLoading) {
     return (
@@ -43,11 +53,14 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
     return (
       <Alert variant="destructive" className="mb-4">
         <AlertDescription className="flex items-center justify-between">
-          <span>Failed to load tweets: {error.message}</span>
+          <span>Failed to load tweets. Please try refreshing the page.</span>
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={() => refetch()}
+            onClick={() => {
+              setIsInitialLoad(true);
+              refetch();
+            }}
             className="ml-2"
           >
             <RotateCw className="mr-2 h-4 w-4" />
@@ -68,16 +81,19 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
     );
   }
 
-  // Filter and prepare tweets once
-  const validTweets = tweets.filter(tweet => tweet && tweet.created_at);
+  // Filter and prepare tweets
+  const validTweets = tweets.filter((tweet): tweet is Tweet => 
+    Boolean(tweet && tweet.created_at && tweet.tweet_id)
+  );
+  
   const sortedTweets = [...validTweets].sort((a, b) => 
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
 
-  // Prepare prediction tweets once
+  // Prepare prediction tweets
   const predictionTweets = predictions
     ?.map(p => p.tweet)
-    .filter(tweet => tweet && tweet.created_at) || [];
+    .filter((tweet): tweet is Tweet => Boolean(tweet && tweet.created_at)) || [];
   
   const sortedPredictionTweets = [...predictionTweets].sort((a, b) => 
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
