@@ -31,8 +31,14 @@ const fetchCryptoPrice = async (symbol: string | null) => {
     }
 
     const data = await response.json();
-    console.log('Price data received:', data); // Debug log
-    return data?.price || null;
+    console.log(`Price data received for ${symbol}:`, data);
+    
+    if (!data || typeof data.price !== 'number') {
+      console.error(`Invalid price data for ${symbol}:`, data);
+      return null;
+    }
+
+    return data.price;
   } catch (error) {
     console.error(`Failed to fetch price for ${symbol}:`, error);
     return null;
@@ -49,6 +55,7 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
 
   // Get unique crypto symbols from predictions
   const uniqueCryptos = [...new Set(predictionsData?.map(p => p.prediction.crypto) || [])];
+  console.log('Unique cryptos to fetch:', uniqueCryptos);
   
   // Fetch prices for all unique cryptos
   const priceQueries = useQueries({
@@ -58,6 +65,7 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
       refetchInterval: 30000, // Refresh every 30 seconds
       retry: 2,
       retryDelay: 1000,
+      staleTime: 20000, // Consider data stale after 20 seconds
     })),
   });
 
@@ -65,8 +73,20 @@ export const PredictionsTable = ({ username = "SolbergInvest" }: PredictionsTabl
     if (!symbol) return "---";
     const queryIndex = uniqueCryptos.indexOf(symbol);
     if (queryIndex === -1) return "---";
-    const price = priceQueries[queryIndex].data;
-    return price ? `$${Number(price).toLocaleString()}` : "Loading...";
+    
+    const query = priceQueries[queryIndex];
+    
+    if (query.isError) {
+      console.error(`Error fetching price for ${symbol}:`, query.error);
+      return "Error";
+    }
+    
+    if (query.isLoading) {
+      return "Loading...";
+    }
+    
+    const price = query.data;
+    return price ? `$${Number(price).toLocaleString()}` : "N/A";
   };
 
   if (tweetsLoading || predictionsLoading) {

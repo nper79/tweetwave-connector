@@ -15,6 +15,8 @@ export const formatCryptoSymbol = (code: string | null): string | null => {
     'ETH': 'ETH',
     'SOL': 'SOL',
     'ORAI': 'ORAI',
+    'HBAR': 'HBAR',
+    'FIL': 'FIL',
     // Add more mappings as needed
   };
 
