@@ -14,9 +14,6 @@ serve(async (req) => {
   try {
     console.log('Starting crypto price fetch from Binance API...');
     
-    const cryptos = ['BTC', 'ETH', 'SOL', 'XRP', 'PEPE', 'FLOKI'];
-    const prices = [];
-
     // Fetch all prices at once from Binance
     const response = await fetch('https://api.binance.com/api/v3/ticker/price');
     
@@ -39,28 +36,60 @@ serve(async (req) => {
     const allPrices = await response.json();
     console.log('Successfully fetched all prices from Binance');
 
-    for (const symbol of cryptos) {
-      console.log(`Processing ${symbol} price...`);
+    // Create a mapping for the symbols we want to track
+    const symbolMapping = {
+      'BTC': 'BTCUSDT',
+      'ETH': 'ETHUSDT',
+      'SOL': 'SOLUSDT',
+      'XRP': 'XRPUSDT',
+      'PEPE': 'PEPEUSDT',
+      'FLOKI': 'FLOKIUSDT'
+    };
+
+    const prices = [];
+
+    for (const [symbol, binanceSymbol] of Object.entries(symbolMapping)) {
+      console.log(`Processing ${symbol} (${binanceSymbol}) price...`);
       
-      // Binance uses USDT pairs for most cryptocurrencies
-      const binanceSymbol = `${symbol}USDT`;
       const priceData = allPrices.find(p => p.symbol === binanceSymbol);
       
       if (priceData) {
         const price = parseFloat(priceData.price);
         console.log(`Found price for ${symbol}:`, price);
         
+        // Store in our format
         prices.push({
           symbol,
           price,
           timestamp: new Date().toISOString()
         });
       } else {
-        console.log(`No price found for ${symbol}`);
+        console.log(`No price found for ${symbol} (${binanceSymbol})`);
       }
     }
 
     console.log(`Successfully processed ${prices.length} prices:`, prices);
+
+    // Insert prices into the database
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    for (const price of prices) {
+      const { error: insertError } = await supabase
+        .from('historical_prices')
+        .insert({
+          symbol: price.symbol,
+          price: price.price,
+          timestamp: price.timestamp
+        });
+
+      if (insertError) {
+        console.error(`Error inserting price for ${price.symbol}:`, insertError);
+      }
+    }
 
     return new Response(
       JSON.stringify({ success: true, count: prices.length, prices }),
