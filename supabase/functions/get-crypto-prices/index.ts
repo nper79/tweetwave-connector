@@ -33,7 +33,10 @@ serve(async (req) => {
       .lte('timestamp', endTime)
       .order('timestamp', { ascending: true })
 
-    if (dbError) throw dbError
+    if (dbError) {
+      console.error('Database error:', dbError)
+      throw dbError
+    }
 
     // If we have recent data (last 24h), return it
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
@@ -57,7 +60,11 @@ serve(async (req) => {
     // If we don't have recent data, fetch from LiveCoinWatch
     console.log('Fetching fresh data from LiveCoinWatch')
     const apiKey = await supabase.rpc('get_secret_value', { secret_name: 'LIVECOINWATCH_API_KEY' })
-    if (!apiKey) throw new Error('LiveCoinWatch API key not found')
+    if (!apiKey) {
+      console.error('LiveCoinWatch API key not found')
+      throw new Error('LiveCoinWatch API key not found')
+    }
+    console.log('Got API key from secrets')
 
     const response = await fetch('https://api.livecoinwatch.com/coins/single/history', {
       method: 'POST',
@@ -75,7 +82,10 @@ serve(async (req) => {
     })
 
     if (!response.ok) {
-      throw new Error(`LiveCoinWatch API error: ${response.statusText}`)
+      console.error('LiveCoinWatch API error:', response.status, response.statusText)
+      const responseText = await response.text()
+      console.error('Response body:', responseText)
+      throw new Error(`LiveCoinWatch API error: ${response.statusText || responseText}`)
     }
 
     const data = await response.json()
@@ -96,8 +106,11 @@ serve(async (req) => {
           ignoreDuplicates: true 
         })
 
-      if (insertError) console.error('Error storing prices:', insertError)
-      else console.log('Successfully stored new prices')
+      if (insertError) {
+        console.error('Error storing prices:', insertError)
+      } else {
+        console.log('Successfully stored new prices')
+      }
     }
 
     return new Response(
@@ -105,10 +118,13 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
-    console.error('Error fetching price:', error)
+    console.error('Error in Edge Function:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 500 
+      }
     )
   }
 })
