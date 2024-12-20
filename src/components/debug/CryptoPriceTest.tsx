@@ -1,19 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { fetchCryptoPrice } from "@/utils/crypto-utils";
 import { Card } from "@/components/ui/card";
 
 const TEST_CRYPTOS = ['BTC', 'ETH', 'SOL', 'XRP', 'PEPE', 'FLOKI'];
 
 export const CryptoPriceTest = () => {
-  const queries = TEST_CRYPTOS.map(symbol => ({
-    queryKey: ['crypto-price-test', symbol],
-    queryFn: () => fetchCryptoPrice(symbol),
-    refetchInterval: 30000,
-    retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  }));
-
-  const results = queries.map(query => useQuery(query));
+  const results = useQueries({
+    queries: TEST_CRYPTOS.map(symbol => ({
+      queryKey: ['crypto-price-test', symbol],
+      queryFn: () => fetchCryptoPrice(symbol),
+      refetchInterval: 30000,
+      retry: 2,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    }))
+  });
 
   return (
     <Card className="p-6">
