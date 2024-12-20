@@ -26,7 +26,10 @@ serve(async (req) => {
 
     // Fetch prices for each crypto
     for (const symbol of cryptos) {
-      const response = await fetch(`https://crypto-market-prices.p.rapidapi.com/tokens/${symbol}?base=USDT`, {
+      const endpoint = `https://crypto-market-prices.p.rapidapi.com/price?symbol=${symbol}USDT`;
+      console.log(`Fetching price for ${symbol} from endpoint:`, endpoint);
+      
+      const response = await fetch(endpoint, {
         headers: {
           'x-rapidapi-host': 'crypto-market-prices.p.rapidapi.com',
           'x-rapidapi-key': apiKey
