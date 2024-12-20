@@ -28,8 +28,36 @@ export const PredictionRow = ({ prediction }: PredictionRowProps) => {
   });
 
   const formatPrice = (price: number | null | undefined) => {
-    if (price === null || price === undefined) return "---";
-    return `$${Number(price).toLocaleString()}`;
+    if (price === null || price === undefined) return "N/A";
+    
+    try {
+      const numPrice = Number(price);
+      
+      // For extremely small numbers (less than 0.0001)
+      if (numPrice < 0.0001) {
+        const scientificStr = numPrice.toExponential(8);
+        const [base, exponent] = scientificStr.split('e');
+        const baseNum = parseFloat(base);
+        const formattedBase = baseNum.toFixed(8);
+        return `$${formattedBase}`;
+      }
+      
+      // For small numbers (less than 1)
+      if (numPrice < 1) {
+        return `$${numPrice.toFixed(6)}`;
+      }
+      
+      // For regular numbers
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(numPrice);
+    } catch (error) {
+      console.error('Error formatting price:', error, 'Price value:', price);
+      return 'Error';
+    }
   };
 
   if (isLoading) {
