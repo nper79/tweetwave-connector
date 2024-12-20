@@ -10,7 +10,6 @@ export const fetchHistoricalPrice = async (symbol: string, timestamp: number): P
   try {
     console.log(`Fetching historical price for ${symbol}`);
     
-    // First try to get the price from our database
     const { data: prices, error: dbError } = await supabase
       .from('historical_prices')
       .select('*')
@@ -25,7 +24,6 @@ export const fetchHistoricalPrice = async (symbol: string, timestamp: number): P
     }
 
     if (prices && prices.length > 0) {
-      // Find the closest historical price to the timestamp
       const targetDate = new Date(timestamp).getTime();
       const closestPrice = prices.reduce((closest, current) => {
         const currentDiff = Math.abs(new Date(current.timestamp).getTime() - targetDate);
@@ -33,6 +31,7 @@ export const fetchHistoricalPrice = async (symbol: string, timestamp: number): P
         return currentDiff < closestDiff ? current : closest;
       });
 
+      console.log(`Found historical price for ${symbol}:`, closestPrice.price);
       return closestPrice.price;
     }
 
@@ -50,7 +49,6 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
   try {
     console.log(`Fetching current price for ${symbol}...`);
     
-    // Get the most recent price from our database
     const { data: prices, error: dbError } = await supabase
       .from('historical_prices')
       .select('*')
@@ -70,6 +68,35 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
     }
 
     console.log(`No price found in database for ${symbol}`);
+    
+    // Try to invoke the edge function to fetch fresh prices
+    const { error: invocationError } = await supabase.functions.invoke('fetch-coincap-prices', {
+      body: { symbols: [symbol] }
+    });
+
+    if (invocationError) {
+      console.error('Error invoking edge function:', invocationError);
+      throw invocationError;
+    }
+
+    // Try to get the price again after the edge function has run
+    const { data: freshPrices, error: freshError } = await supabase
+      .from('historical_prices')
+      .select('*')
+      .eq('symbol', formatCryptoSymbol(symbol))
+      .order('timestamp', { ascending: false })
+      .limit(1);
+
+    if (freshError) {
+      console.error('Error fetching fresh price:', freshError);
+      throw freshError;
+    }
+
+    if (freshPrices && freshPrices.length > 0) {
+      console.log(`Found fresh price for ${symbol}:`, freshPrices[0].price);
+      return freshPrices[0].price;
+    }
+
     return null;
   } catch (error) {
     console.error(`Failed to fetch price for ${symbol}:`, error);
