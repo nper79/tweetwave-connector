@@ -15,24 +15,29 @@ export const CryptoPriceTest = () => {
     }))
   });
 
-  const formatPrice = (price: number | null) => {
-    if (price === null) return 'N/A';
+  const formatPrice = (price: number | null | undefined) => {
+    if (price === null || price === undefined) return 'N/A';
     
-    // For extremely small numbers (less than 0.0001), show more decimal places
-    if (price < 0.0001) {
-      return `$${price.toFixed(8)}`;
+    try {
+      // For extremely small numbers (less than 0.0001), show more decimal places
+      if (price < 0.0001) {
+        return `$${price.toFixed(8)}`;
+      }
+      
+      // For small numbers (less than 1), show more decimals
+      if (price < 1) {
+        return `$${price.toFixed(6)}`;
+      }
+      
+      // For regular numbers, use locale string with appropriate decimals
+      return `$${Number(price).toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })}`;
+    } catch (error) {
+      console.error('Error formatting price:', error, 'Price value:', price);
+      return 'Error';
     }
-    
-    // For small numbers (less than 1), show more decimals
-    if (price < 1) {
-      return `$${price.toFixed(6)}`;
-    }
-    
-    // For regular numbers, use locale string with appropriate decimals
-    return `$${price.toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    })}`;
   };
 
   return (
