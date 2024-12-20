@@ -2,21 +2,13 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const formatCryptoSymbol = (code: string | null): string | null => {
   if (!code) return null;
-  
-  // Remove any $ prefix if present and add /USD suffix
   const cleanCode = code.replace('$', '');
   return `${cleanCode}/USD`;
 };
 
 export const fetchHistoricalPrice = async (symbol: string, timestamp: number): Promise<number | null> => {
   try {
-    const formattedSymbol = formatCryptoSymbol(symbol);
-    if (!formattedSymbol) return null;
-
-    console.log(`Fetching historical price for ${formattedSymbol}`);
-    
-    // For now, we'll just fetch current price since historical data isn't available
-    // in the free API. In production, you'd want to use a service with historical data
+    console.log(`Fetching historical price for ${symbol}`);
     const currentPrice = await fetchCryptoPrice(symbol);
     return currentPrice;
   } catch (error) {
@@ -29,28 +21,25 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
   if (!symbol) return null;
   
   try {
-    const formattedSymbol = formatCryptoSymbol(symbol);
-    if (!formattedSymbol) return null;
+    console.log('Making test call to Edge Function');
     
-    console.log(`Fetching current price for symbol: ${formattedSymbol}`);
-    
-    const { data, error } = await supabase.functions.invoke('get-crypto-prices', {
-      body: { symbols: formattedSymbol }
-    });
+    const { data, error } = await supabase.functions.invoke('get-crypto-prices');
 
     if (error) {
-      console.error('Failed to fetch current price:', error);
+      console.error('Edge Function test call failed:', error);
       return null;
     }
 
-    if (!data || !data[formattedSymbol]) {
-      console.error('No price data found');
-      return null;
+    console.log('Edge Function response:', data);
+
+    // For testing, we'll return the hardcoded BTC price if it exists
+    if (data && data['BTC/USD']) {
+      return data['BTC/USD'].price;
     }
 
-    return data[formattedSymbol].price;
+    return null;
   } catch (error) {
-    console.error('Failed to fetch current price:', error);
+    console.error('Failed to fetch test price:', error);
     return null;
   }
 };

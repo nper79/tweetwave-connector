@@ -12,30 +12,22 @@ serve(async (req) => {
   }
 
   try {
-    const url = new URL(req.url)
-    const symbols = url.searchParams.get('symbols')
-    
-    if (!symbols) {
-      return new Response(
-        JSON.stringify({ error: 'Symbols parameter is required' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      )
+    // Return a simple test response
+    const testData = {
+      "BTC/USD": {
+        price: 50000,
+        symbol: "BTC/USD"
+      }
     }
 
-    const apiResponse = await fetch(
-      `https://8394cea1-cd61-4ee4-a8e6-92a205cf7c17-00-3komcir7xic0l.riker.replit.dev/api/v1/prices?symbols=${symbols}&exchange=kraken`
-    )
-
-    const data = await apiResponse.json()
-
     return new Response(
-      JSON.stringify(data),
+      JSON.stringify(testData),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
-    console.error('Error fetching crypto prices:', error)
+    console.error('Error in test endpoint:', error)
     return new Response(
-      JSON.stringify({ error: 'Failed to fetch crypto prices' }),
+      JSON.stringify({ error: 'Test endpoint failed' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }
