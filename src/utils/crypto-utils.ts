@@ -49,28 +49,8 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
   try {
     console.log(`Fetching current price for ${symbol}...`);
     
-    const { data: prices, error: dbError } = await supabase
-      .from('historical_prices')
-      .select('*')
-      .eq('symbol', formatCryptoSymbol(symbol))
-      .order('timestamp', { ascending: false })
-      .limit(1);
-
-    if (dbError) {
-      console.error('Database error when fetching price:', dbError);
-      throw dbError;
-    }
-
-    if (prices && prices.length > 0) {
-      const price = prices[0];
-      console.log(`Found price for ${symbol}:`, price.price);
-      return price.price;
-    }
-
-    console.log(`No price found in database for ${symbol}`);
-    
     // Try to invoke the edge function to fetch fresh prices
-    const { error: invocationError } = await supabase.functions.invoke('fetch-coincap-prices', {
+    const { data, error: invocationError } = await supabase.functions.invoke('fetch-coincap-prices', {
       body: { symbols: [symbol] }
     });
 
@@ -79,24 +59,25 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
       throw invocationError;
     }
 
-    // Try to get the price again after the edge function has run
-    const { data: freshPrices, error: freshError } = await supabase
+    // Get the latest price from the database after the edge function has run
+    const { data: prices, error: dbError } = await supabase
       .from('historical_prices')
       .select('*')
       .eq('symbol', formatCryptoSymbol(symbol))
       .order('timestamp', { ascending: false })
       .limit(1);
 
-    if (freshError) {
-      console.error('Error fetching fresh price:', freshError);
-      throw freshError;
+    if (dbError) {
+      console.error('Error fetching price:', dbError);
+      throw dbError;
     }
 
-    if (freshPrices && freshPrices.length > 0) {
-      console.log(`Found fresh price for ${symbol}:`, freshPrices[0].price);
-      return freshPrices[0].price;
+    if (prices && prices.length > 0) {
+      console.log(`Found price for ${symbol}:`, prices[0].price);
+      return prices[0].price;
     }
 
+    console.log(`No price found for ${symbol}`);
     return null;
   } catch (error) {
     console.error(`Failed to fetch price for ${symbol}:`, error);
