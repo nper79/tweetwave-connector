@@ -8,9 +8,15 @@ const extractCryptoSymbol = (text: string): string | null => {
 };
 
 const extractTargetPrice = (text: string): number | null => {
-  const match = text.match(/target:?\s*\$?(\d+(?:,\d{3})*(?:\.\d+)?)/i);
-  if (!match) return null;
-  return parseFloat(match[1].replace(/,/g, ''));
+  // Look for explicit target prices
+  const targetMatch = text.match(/target:?\s*\$?(\d+(?:,\d{3})*(?:\.\d+)?)/i);
+  if (targetMatch) return parseFloat(targetMatch[1].replace(/,/g, ''));
+  
+  // Look for price levels or projections
+  const priceMatch = text.match(/\$(\d+(?:,\d{3})*(?:\.\d+)?)/);
+  if (priceMatch) return parseFloat(priceMatch[1].replace(/,/g, ''));
+  
+  return null;
 };
 
 const getCurrentPrice = async (crypto: string): Promise<number> => {
@@ -24,18 +30,46 @@ const isPredictionTweet = (tweet: Tweet) => {
   const cryptoSymbolRegex = /\$[A-Z]{2,}/;
   const hasCryptoSymbol = cryptoSymbolRegex.test(tweet.text);
   
+  // Expanded list of prediction-related keywords and patterns
   const predictionKeywords = [
+    // Explicit prediction terms
     'target', 'prediction', 'predict', 'forecast',
     'expecting', 'expect', 'projected', 'analysis',
+    
+    // Technical analysis terms
     'breakout', 'resistance', 'support', 'rally',
-    'bullish', 'bearish', 'long', 'short'
+    'bullish', 'bearish', 'long', 'short',
+    'headed', 'going', 'moving', 'trend',
+    
+    // Price action terms
+    'price', 'level', 'zone', 'area',
+    'high', 'low', 'peak', 'bottom',
+    
+    // Time-based predictions
+    'soon', 'next', 'incoming', 'update',
+    '2024', '2025', // Include years for future predictions
+    
+    // Chart patterns
+    'pattern', 'formation', 'setup', 'chart',
+    'technical', 'analysis', 'ta', 'study'
   ];
   
+  // Check for prediction keywords
   const hasKeyword = predictionKeywords.some(keyword => 
     tweet.text?.toLowerCase().includes(keyword)
   );
   
-  return hasCryptoSymbol && hasKeyword;
+  // Check for price mentions
+  const hasPriceMention = /\$\d+|\d+\$/.test(tweet.text);
+  
+  // Check for chart images
+  const hasChartImage = tweet.media?.photo && tweet.media.photo.length > 0;
+  
+  // Consider it a prediction if it has a crypto symbol AND either:
+  // 1. Contains prediction keywords
+  // 2. Contains price mentions
+  // 3. Contains chart images along with some analysis context
+  return hasCryptoSymbol && (hasKeyword || hasPriceMention || (hasChartImage && hasKeyword));
 };
 
 const parsePredictionFromTweet = (tweet: Tweet) => {
