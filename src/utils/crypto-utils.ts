@@ -14,7 +14,7 @@ export const formatCryptoSymbol = (code: string | null): string | null => {
     'BTC': 'BTC',
     'ETH': 'ETH',
     'SOL': 'SOL',
-    'ORAI': null, // Unsupported token
+    'ORAI': 'ORAI',
     // Add more mappings as needed
   };
 
