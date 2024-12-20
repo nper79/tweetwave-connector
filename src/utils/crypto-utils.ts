@@ -28,7 +28,7 @@ export const fetchHistoricalPrice = async (symbol: string, timestamp: number): P
 
     console.log(`Fetching historical price for ${formattedSymbol} at ${new Date(timestamp).toISOString()}`);
 
-    const data = await fetchFromLiveCoinWatch('coins/single/history', formattedSymbol, {
+    const data = await fetchFromLiveCoinWatch('history', formattedSymbol, {
       start: timestamp - 300000, // 5 minutes before
       end: timestamp + 300000,   // 5 minutes after
     });
@@ -59,7 +59,7 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
     
     console.log(`Fetching current price for symbol: ${formattedSymbol}`);
     
-    const data = await fetchFromLiveCoinWatch('coins/single', formattedSymbol);
+    const data = await fetchFromLiveCoinWatch('single', formattedSymbol);
     return data.rate || null;
   } catch (error) {
     console.error(`Failed to fetch current price for ${symbol}:`, error);

@@ -22,7 +22,11 @@ export const fetchFromLiveCoinWatch = async (endpoint: string, symbol: string, p
     
     console.log(`Making LiveCoinWatch API request to ${endpoint} for ${symbol}`);
     
-    const response = await fetch(`${baseUrl}/${endpoint}`, {
+    // Adjust endpoint based on whether we're fetching historical data
+    const isHistorical = endpoint.includes('history');
+    const finalEndpoint = isHistorical ? 'coins/single/history' : 'coins/single';
+    
+    const response = await fetch(`${baseUrl}/${finalEndpoint}`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -31,8 +35,9 @@ export const fetchFromLiveCoinWatch = async (endpoint: string, symbol: string, p
       body: JSON.stringify({
         currency: "USD",
         code: symbol,
-        meta: true,
-        ...params
+        meta: !isHistorical,
+        start: params.start,
+        end: params.end,
       }),
     });
 
