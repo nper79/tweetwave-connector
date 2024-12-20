@@ -6,49 +6,51 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface CoinCapResponse {
-  data: {
-    id: string;
-    symbol: string;
-    priceUsd: string;
-  }[];
-  timestamp: number;
-}
-
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('Starting CoinCap price fetch...');
+    console.log('Starting crypto price fetch...');
     
     // Get API key from environment
-    const apiKey = Deno.env.get('COINCAP_API_KEY');
+    const apiKey = Deno.env.get('RAPIDAPI_KEY');
     if (!apiKey) {
-      throw new Error('CoinCap API key not found');
+      throw new Error('RapidAPI key not found');
     }
 
-    // Fetch prices from CoinCap API
-    const response = await fetch('https://api.coincap.io/v2/assets?limit=2000', {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`
-      }
-    });
+    // List of cryptocurrencies we want to fetch
+    const cryptos = ['BTC', 'ETH', 'SOL', 'XRP'];
+    const prices = [];
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('CoinCap API error:', {
-        status: response.status,
-        statusText: response.statusText,
-        body: errorText
+    // Fetch prices for each crypto
+    for (const symbol of cryptos) {
+      const response = await fetch(`https://crypto-market-prices.p.rapidapi.com/tokens/${symbol}?base=USDT`, {
+        headers: {
+          'x-rapidapi-host': 'crypto-market-prices.p.rapidapi.com',
+          'x-rapidapi-key': apiKey
+        }
       });
-      throw new Error(`CoinCap API error: ${response.statusText || errorText}`);
+
+      if (!response.ok) {
+        console.error(`Error fetching ${symbol}:`, response.statusText);
+        continue;
+      }
+
+      const data = await response.json();
+      console.log(`Received data for ${symbol}:`, data);
+
+      if (data && data.price) {
+        prices.push({
+          symbol,
+          price: parseFloat(data.price),
+          timestamp: new Date().toISOString()
+        });
+      }
     }
 
-    const data: CoinCapResponse = await response.json();
-    console.log(`Fetched ${data.data.length} prices from CoinCap`);
+    console.log(`Successfully fetched ${prices.length} prices`);
 
     // Create Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -60,26 +62,19 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Store prices in our database
-    const timestamp = new Date().toISOString();
-    const prices = data.data.map(coin => ({
-      symbol: coin.symbol,
-      price: parseFloat(coin.priceUsd),
-      timestamp
-    }));
+    if (prices.length > 0) {
+      const { error: insertError } = await supabase
+        .from('historical_prices')
+        .insert(prices);
 
-    const { error: insertError } = await supabase
-      .from('historical_prices')
-      .insert(prices);
-
-    if (insertError) {
-      console.error('Error storing prices:', insertError);
-      throw insertError;
+      if (insertError) {
+        console.error('Error storing prices:', insertError);
+        throw insertError;
+      }
     }
 
-    console.log(`Successfully stored ${prices.length} prices in database`);
-
     return new Response(
-      JSON.stringify({ success: true, count: prices.length }),
+      JSON.stringify({ success: true, count: prices.length, prices }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
