@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -63,28 +62,6 @@ serve(async (req) => {
     }
 
     console.log(`Successfully fetched ${prices.length} prices:`, prices);
-
-    // Create Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Missing Supabase credentials');
-    }
-    
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    if (prices.length > 0) {
-      console.log('Storing prices in database...');
-      const { error: insertError } = await supabase
-        .from('historical_prices')
-        .insert(prices);
-
-      if (insertError) {
-        console.error('Error storing prices:', insertError);
-        throw insertError;
-      }
-      console.log('Successfully stored prices in database');
-    }
 
     return new Response(
       JSON.stringify({ success: true, count: prices.length, prices }),
