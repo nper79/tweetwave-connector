@@ -77,6 +77,10 @@ export type Database = {
         }
         Returns: string
       }
+      invoke_coincap_prices: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
