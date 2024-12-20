@@ -20,7 +20,6 @@ export default defineConfig(({ mode }) => ({
     },
   },
   define: {
-    // This is needed for CCXT to work in browser-only mode
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
   },
   build: {
