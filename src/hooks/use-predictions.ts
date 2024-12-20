@@ -1,55 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tweet } from "@/types/twitter";
 import { supabase } from "@/integrations/supabase/client";
-
-const extractCryptoSymbol = (text: string): string | null => {
-  const match = text.match(/\$[A-Z]{2,}/);
-  return match ? match[0].substring(1) : 'BTC'; // Default to BTC if no symbol found
-};
-
-const extractTargetPrice = (text: string): number | null => {
-  // Look for explicit target prices
-  const targetMatch = text.match(/target:?\s*\$?(\d+(?:,\d{3})*(?:\.\d+)?)/i);
-  if (targetMatch) return parseFloat(targetMatch[1].replace(/,/g, ''));
-  
-  // Look for price levels or projections
-  const priceMatch = text.match(/\$(\d+(?:,\d{3})*(?:\.\d+)?)/);
-  if (priceMatch) return parseFloat(priceMatch[1].replace(/,/g, ''));
-  
-  return 50000; // Default target price for testing
-};
+import { isPredictionTweet, extractCryptoSymbol, extractTargetPrice } from "@/utils/prediction-utils";
 
 const getCurrentPrice = async (crypto: string): Promise<number> => {
   return 50000; // Mock price for testing
-};
-
-const isPredictionTweet = (tweet: Tweet): boolean => {
-  if (!tweet.text) return false;
-  
-  const text = tweet.text.toLowerCase();
-  
-  // Keywords indicating a prediction
-  const predictionKeywords = [
-    'prediction', 'predict', 'target', 'expect', 'soon', 'coming',
-    'dip', 'drop', 'fall', 'decline', 'bearish',
-    'pump', 'rise', 'surge', 'bullish', 'moon',
-    'support', 'resistance', 'break'
-  ];
-  
-  // Check for crypto symbols
-  const hasCryptoSymbol = text.includes('$') && /\$[A-Z]{2,}/.test(tweet.text);
-  
-  // Check for prediction keywords
-  const hasPredictionKeyword = predictionKeywords.some(keyword => text.includes(keyword));
-  
-  // Check for technical analysis terms
-  const hasTechnicalAnalysis = text.includes('wedge') || 
-                              text.includes('pattern') || 
-                              text.includes('trend') ||
-                              text.includes('level') ||
-                              text.includes('bottom');
-  
-  return hasCryptoSymbol && (hasPredictionKeyword || hasTechnicalAnalysis);
 };
 
 const parsePredictionFromTweet = (tweet: Tweet) => {
