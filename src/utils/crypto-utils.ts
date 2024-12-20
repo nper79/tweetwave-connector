@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://8394cea1-cd61-4ee4-a8e6-92a205cf7c17-00-3komcir7xic0l.riker.replit.dev";
+import { supabase } from "@/integrations/supabase/client";
 
 export const formatCryptoSymbol = (code: string | null): string | null => {
   if (!code) return null;
@@ -34,16 +34,15 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
     
     console.log(`Fetching current price for symbol: ${formattedSymbol}`);
     
-    const response = await fetch(
-      `${API_BASE_URL}/api/v1/prices?symbols=${formattedSymbol}&exchange=kraken`
-    );
+    const { data, error } = await supabase.functions.invoke('get-crypto-prices', {
+      body: { symbols: formattedSymbol }
+    });
 
-    if (!response.ok) {
-      console.error('Failed to fetch current price:', await response.text());
+    if (error) {
+      console.error('Failed to fetch current price:', error);
       return null;
     }
 
-    const data = await response.json();
     if (!data || !data[formattedSymbol]) {
       console.error('No price data found');
       return null;
