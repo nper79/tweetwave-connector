@@ -1,25 +1,11 @@
-import { supabase } from "@/integrations/supabase/client";
-
-let API_KEY: string | null = null;
-
-const getApiKey = async (): Promise<string> => {
-  if (API_KEY) return API_KEY;
-  
-  const { data: { apiKey }, error } = await supabase.functions.invoke('get-livecoinwatch-key');
-  if (error) throw error;
-  
-  API_KEY = apiKey;
-  return apiKey;
-};
+const API_BASE_URL = "https://8394cea1-cd61-4ee4-a8e6-92a205cf7c17-00-3komcir7xic0l.riker.replit.dev";
 
 export const formatCryptoSymbol = (code: string | null): string | null => {
   if (!code) return null;
   
-  // Remove any $ prefix if present
+  // Remove any $ prefix if present and add /USD suffix
   const cleanCode = code.replace('$', '');
-  
-  // Return the clean code
-  return cleanCode;
+  return `${cleanCode}/USD`;
 };
 
 export const fetchHistoricalPrice = async (symbol: string, timestamp: number): Promise<number | null> => {
@@ -27,36 +13,12 @@ export const fetchHistoricalPrice = async (symbol: string, timestamp: number): P
     const formattedSymbol = formatCryptoSymbol(symbol);
     if (!formattedSymbol) return null;
 
-    console.log(`Fetching historical price for ${formattedSymbol} at ${new Date(timestamp).toISOString()}`);
-
-    const apiKey = await getApiKey();
-    const response = await fetch('https://api.livecoinwatch.com/coins/single/history', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': apiKey,
-      },
-      body: JSON.stringify({
-        currency: 'USD',
-        code: formattedSymbol,
-        start: timestamp,
-        end: timestamp + 300000, // 5 minutes after to ensure we get a price
-        meta: false,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error('Failed to fetch historical price:', await response.text());
-      return null;
-    }
-
-    const data = await response.json();
-    if (!data || !data.history || data.history.length === 0) {
-      console.error('No historical price data found');
-      return null;
-    }
-
-    return data.history[0].rate;
+    console.log(`Fetching historical price for ${formattedSymbol}`);
+    
+    // For now, we'll just fetch current price since historical data isn't available
+    // in the free API. In production, you'd want to use a service with historical data
+    const currentPrice = await fetchCryptoPrice(symbol);
+    return currentPrice;
   } catch (error) {
     console.error('Error fetching historical price:', error);
     return null;
@@ -72,19 +34,9 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
     
     console.log(`Fetching current price for symbol: ${formattedSymbol}`);
     
-    const apiKey = await getApiKey();
-    const response = await fetch('https://api.livecoinwatch.com/coins/single', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': apiKey,
-      },
-      body: JSON.stringify({
-        currency: 'USD',
-        code: formattedSymbol,
-        meta: false,
-      }),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/prices?symbols=${formattedSymbol}&exchange=kraken`
+    );
 
     if (!response.ok) {
       console.error('Failed to fetch current price:', await response.text());
@@ -92,7 +44,12 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
     }
 
     const data = await response.json();
-    return data.rate;
+    if (!data || !data[formattedSymbol]) {
+      console.error('No price data found');
+      return null;
+    }
+
+    return data[formattedSymbol].price;
   } catch (error) {
     console.error('Failed to fetch current price:', error);
     return null;
