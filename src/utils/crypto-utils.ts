@@ -2,7 +2,6 @@ import { supabase } from "@/integrations/supabase/client";
 
 const formatCryptoSymbol = (symbol: string): string | null => {
   if (!symbol) return null;
-  // Remove $ if present and convert to uppercase
   return symbol.replace('$', '').toUpperCase();
 };
 
@@ -86,26 +85,17 @@ export const fetchCryptoPrice = async (symbol: string): Promise<number | null> =
       console.error(`Edge function error for ${formattedSymbol}:`, invocationError);
       // Try to get the latest price from DB as fallback
       console.log(`Attempting DB fallback for ${formattedSymbol}...`);
-      const latestPrice = await fetchPriceFromDB(formattedSymbol);
-      if (latestPrice) {
-        console.log(`Successfully retrieved fallback price for ${formattedSymbol}:`, latestPrice);
-        return latestPrice;
-      }
-      console.error(`No fallback price found for ${formattedSymbol}`);
-      return null;
+      return await fetchPriceFromDB(formattedSymbol);
     }
 
-    console.log(`Edge function response for ${formattedSymbol}:`, invocationData);
-
-    // Get the latest price after fetching fresh data
-    const latestPrice = await fetchPriceFromDB(formattedSymbol);
-    if (latestPrice) {
-      console.log(`Successfully fetched current price for ${formattedSymbol}:`, latestPrice);
-      return latestPrice;
+    if (invocationData?.prices?.[0]?.price) {
+      console.log(`Successfully fetched current price for ${formattedSymbol}:`, invocationData.prices[0].price);
+      return invocationData.prices[0].price;
     }
 
-    console.error(`No price found for ${formattedSymbol} after all attempts`);
-    return null;
+    // If edge function didn't return a price, try DB fallback
+    console.log(`No price from edge function for ${formattedSymbol}, trying DB fallback...`);
+    return await fetchPriceFromDB(formattedSymbol);
   } catch (error) {
     console.error(`Unexpected error fetching price for ${symbol}:`, error);
     return null;

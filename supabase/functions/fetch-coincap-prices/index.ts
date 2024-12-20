@@ -21,7 +21,6 @@ serve(async (req) => {
       );
     }
 
-    // Create Supabase client
     const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -29,103 +28,87 @@ serve(async (req) => {
     );
 
     const timestamp = new Date().toISOString();
-    const prices = [];
-
-    // Process all symbols concurrently using Promise.all
-    await Promise.all(symbols.map(async (symbol) => {
-      console.log(`Processing ${symbol}...`);
-      let price = null;
-
-      // Generate a unique request ID for this symbol
+    const pricePromises = symbols.map(async (symbol) => {
       const requestId = `${symbol}-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-      console.log(`Request ID for ${symbol}: ${requestId}`);
-
-      // 1. Try Binance first
+      console.log(`[${requestId}] Starting price fetch for ${symbol}`);
+      
       try {
+        // Try Binance first
         const binanceResponse = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}USDT`);
         if (binanceResponse.ok) {
           const binanceData = await binanceResponse.json();
           if (binanceData.price) {
-            price = parseFloat(binanceData.price);
-            console.log(`[${requestId}] Found Binance price for ${symbol}:`, price);
+            const price = parseFloat(binanceData.price);
+            console.log(`[${requestId}] Got Binance price for ${symbol}: ${price}`);
+            return { symbol, price, timestamp, source: 'binance' };
           }
         }
+
+        // Try CoinGecko as fallback
+        const geckoResponse = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${symbol.toLowerCase()}&vs_currencies=usd`);
+        if (geckoResponse.ok) {
+          const geckoData = await geckoResponse.json();
+          if (geckoData[symbol.toLowerCase()]?.usd) {
+            const price = geckoData[symbol.toLowerCase()].usd;
+            console.log(`[${requestId}] Got CoinGecko price for ${symbol}: ${price}`);
+            return { symbol, price, timestamp, source: 'coingecko' };
+          }
+        }
+
+        // Try CoinCap as last resort
+        const coincapResponse = await fetch(`https://api.coincap.io/v2/assets/${symbol.toLowerCase()}`);
+        if (coincapResponse.ok) {
+          const coincapData = await coincapResponse.json();
+          if (coincapData.data?.priceUsd) {
+            const price = parseFloat(coincapData.data.priceUsd);
+            console.log(`[${requestId}] Got CoinCap price for ${symbol}: ${price}`);
+            return { symbol, price, timestamp, source: 'coincap' };
+          }
+        }
+
+        console.log(`[${requestId}] No price found for ${symbol} from any source`);
+        return null;
       } catch (error) {
-        console.error(`[${requestId}] Binance error for ${symbol}:`, error);
+        console.error(`[${requestId}] Error fetching price for ${symbol}:`, error);
+        return null;
       }
+    });
 
-      // 2. Try CoinGecko if Binance fails
-      if (!price) {
-        try {
-          const geckoResponse = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${symbol.toLowerCase()}&vs_currencies=usd`);
-          if (geckoResponse.ok) {
-            const geckoData = await geckoResponse.json();
-            if (geckoData[symbol.toLowerCase()]?.usd) {
-              price = geckoData[symbol.toLowerCase()].usd;
-              console.log(`[${requestId}] Found CoinGecko price for ${symbol}:`, price);
-            }
-          }
-        } catch (error) {
-          console.error(`[${requestId}] CoinGecko error for ${symbol}:`, error);
-        }
-      }
+    const priceResults = await Promise.all(pricePromises);
+    const validPrices = priceResults.filter(result => result !== null);
 
-      // 3. Try CoinCap as last resort
-      if (!price) {
-        try {
-          const coincapResponse = await fetch(`https://api.coincap.io/v2/assets/${symbol.toLowerCase()}`);
-          if (coincapResponse.ok) {
-            const coincapData = await coincapResponse.json();
-            if (coincapData.data?.priceUsd) {
-              price = parseFloat(coincapData.data.priceUsd);
-              console.log(`[${requestId}] Found CoinCap price for ${symbol}:`, price);
-            }
-          }
-        } catch (error) {
-          console.error(`[${requestId}] CoinCap error for ${symbol}:`, error);
-        }
-      }
-
-      if (price) {
-        prices.push({
-          symbol,
-          price,
-          timestamp
-        });
-
-        // Store price in database using upsert to handle concurrent writes
-        const { error: insertError } = await supabase
-          .from('historical_prices')
-          .upsert({
+    if (validPrices.length > 0) {
+      const { error: upsertError } = await supabase
+        .from('historical_prices')
+        .upsert(
+          validPrices.map(({ symbol, price, timestamp }) => ({
             symbol,
             price,
             timestamp
-          }, {
-            onConflict: 'symbol,timestamp'
-          });
+          })),
+          { onConflict: 'symbol,timestamp' }
+        );
 
-        if (insertError) {
-          console.error(`[${requestId}] Error storing price for ${symbol}:`, insertError);
-        } else {
-          console.log(`[${requestId}] Successfully stored price for ${symbol}`);
-        }
+      if (upsertError) {
+        console.error('Batch upsert error:', upsertError);
       } else {
-        console.log(`[${requestId}] No price found for ${symbol} from any source`);
+        console.log(`Successfully stored ${validPrices.length} prices`);
       }
-    }));
+    }
 
     return new Response(
-      JSON.stringify({ success: true, count: prices.length, prices }),
+      JSON.stringify({ 
+        success: true, 
+        count: validPrices.length, 
+        prices: validPrices 
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error('Error in Edge Function:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-        status: 500 
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
 });
