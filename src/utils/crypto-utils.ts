@@ -1,81 +1,101 @@
 import { supabase } from "@/integrations/supabase/client";
-import { fetchPriceFromDB } from "./price-utils";
 
-export const formatCryptoSymbol = (code: string | null): string | null => {
-  if (!code) return null;
-  const cleanCode = code.replace(/^\$/, '').replace(/USDT$/i, '').toUpperCase();
-  return cleanCode;
+const formatCryptoSymbol = (symbol: string): string | null => {
+  if (!symbol) return null;
+  // Remove $ if present and convert to uppercase
+  return symbol.replace('$', '').toUpperCase();
 };
 
-export const fetchHistoricalPrice = async (symbol: string, timestamp: number): Promise<number | null> => {
+export const fetchPriceFromDB = async (symbol: string): Promise<number | null> => {
   try {
-    const formattedSymbol = formatCryptoSymbol(symbol);
-    if (!formattedSymbol) return null;
+    console.log(`Fetching latest price from DB for ${symbol}...`);
     
-    // First try to get from DB with a wider time window
-    const startTime = new Date(timestamp - 48 * 60 * 60 * 1000); // 48h before
-    const endTime = new Date(timestamp + 48 * 60 * 60 * 1000);   // 48h after
-    
-    const { data: prices, error } = await supabase
+    const { data, error } = await supabase
       .from('historical_prices')
-      .select('*')
-      .eq('symbol', formattedSymbol)
-      .gte('timestamp', startTime.toISOString())
-      .lte('timestamp', endTime.toISOString())
-      .order('timestamp', { ascending: false });
+      .select('price, timestamp')
+      .eq('symbol', symbol)
+      .order('timestamp', { ascending: false })
+      .limit(1);
 
     if (error) {
-      console.error('Error fetching historical price:', error);
+      console.error(`DB error for ${symbol}:`, error);
       return null;
     }
 
-    if (prices && prices.length > 0) {
-      return prices[0].price;
-    }
-
-    // If no price in DB, fetch fresh data
-    const { data: invocationData, error: invocationError } = await supabase.functions.invoke('fetch-coincap-prices', {
-      body: { symbols: [formattedSymbol] }
-    });
-
-    if (invocationError) {
-      console.error('Error invoking edge function:', invocationError);
+    if (!data || data.length === 0) {
+      console.log(`No price found in DB for ${symbol}`);
       return null;
     }
 
-    // Try to get the price again after fetching fresh data
-    const freshPrice = await fetchPriceFromDB(formattedSymbol, timestamp);
-    return freshPrice;
+    console.log(`Latest DB price for ${symbol}:`, data[0].price);
+    return Number(data[0].price);
   } catch (error) {
-    console.error('Error fetching historical price:', error);
+    console.error(`Error fetching price from DB for ${symbol}:`, error);
     return null;
   }
 };
 
-export const fetchCryptoPrice = async (symbol: string | null): Promise<number | null> => {
-  if (!symbol) return null;
-  
+export const fetchHistoricalPrice = async (symbol: string, timestamp: number): Promise<number | null> => {
+  try {
+    console.log(`Fetching historical price for ${symbol} at ${new Date(timestamp).toISOString()}...`);
+    
+    const { data, error } = await supabase
+      .from('historical_prices')
+      .select('price')
+      .eq('symbol', symbol)
+      .gte('timestamp', new Date(timestamp - 24 * 60 * 60 * 1000).toISOString())
+      .lte('timestamp', new Date(timestamp + 24 * 60 * 60 * 1000).toISOString())
+      .order('timestamp', { ascending: true })
+      .limit(1);
+
+    if (error) {
+      console.error(`Historical price DB error for ${symbol}:`, error);
+      return null;
+    }
+
+    if (!data || data.length === 0) {
+      console.log(`No historical price found for ${symbol}`);
+      return null;
+    }
+
+    console.log(`Found historical price for ${symbol}:`, data[0].price);
+    return Number(data[0].price);
+  } catch (error) {
+    console.error(`Error fetching historical price for ${symbol}:`, error);
+    return null;
+  }
+};
+
+export const fetchCryptoPrice = async (symbol: string): Promise<number | null> => {
   try {
     const formattedSymbol = formatCryptoSymbol(symbol);
-    if (!formattedSymbol) return null;
+    if (!formattedSymbol) {
+      console.error('Invalid symbol format:', symbol);
+      return null;
+    }
     
-    console.log(`Fetching current price for ${formattedSymbol}...`);
+    console.log(`Initiating price fetch for ${formattedSymbol}...`);
     
-    // Always fetch fresh data first
+    // First try to get fresh data
+    console.log(`Invoking edge function for ${formattedSymbol}...`);
     const { data: invocationData, error: invocationError } = await supabase.functions.invoke('fetch-coincap-prices', {
       body: { symbols: [formattedSymbol] }
     });
 
     if (invocationError) {
-      console.error(`Error invoking edge function for ${formattedSymbol}:`, invocationError);
+      console.error(`Edge function error for ${formattedSymbol}:`, invocationError);
       // Try to get the latest price from DB as fallback
+      console.log(`Attempting DB fallback for ${formattedSymbol}...`);
       const latestPrice = await fetchPriceFromDB(formattedSymbol);
       if (latestPrice) {
-        console.log(`Found fallback price in DB for ${formattedSymbol}:`, latestPrice);
+        console.log(`Successfully retrieved fallback price for ${formattedSymbol}:`, latestPrice);
         return latestPrice;
       }
+      console.error(`No fallback price found for ${formattedSymbol}`);
       return null;
     }
+
+    console.log(`Edge function response for ${formattedSymbol}:`, invocationData);
 
     // Get the latest price after fetching fresh data
     const latestPrice = await fetchPriceFromDB(formattedSymbol);
@@ -84,10 +104,10 @@ export const fetchCryptoPrice = async (symbol: string | null): Promise<number | 
       return latestPrice;
     }
 
-    console.error(`No price found for ${formattedSymbol} after multiple attempts`);
+    console.error(`No price found for ${formattedSymbol} after all attempts`);
     return null;
   } catch (error) {
-    console.error(`Failed to fetch price for ${symbol}:`, error);
+    console.error(`Unexpected error fetching price for ${symbol}:`, error);
     return null;
   }
 };
