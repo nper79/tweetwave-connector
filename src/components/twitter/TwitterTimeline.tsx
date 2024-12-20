@@ -17,19 +17,13 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
   const { data: predictions } = usePredictions(tweets || []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (!tweets && !isLoading) {
-          console.log('Fetching tweets for:', username);
-          await refetch();
-        }
-      } catch (error) {
-        console.error('Error fetching tweets:', error);
-      }
-    };
-
-    fetchData();
-  }, [username, refetch, tweets, isLoading]);
+    if (!tweets && !isLoading) {
+      console.log('Initial fetch for:', username);
+      refetch().catch(error => {
+        console.error('Error during initial fetch:', error);
+      });
+    }
+  }, [username]); // Only depend on username changes
 
   if (isLoading) {
     return (
@@ -74,26 +68,26 @@ export const TwitterTimeline = ({ username = "elonmusk" }: TwitterTimelineProps)
     );
   }
 
-  // Filter out invalid tweets first
+  // Filter and prepare tweets once
   const validTweets = tweets.filter(tweet => tweet && tweet.created_at);
-  
-  // Create a copy for sorting
-  const sortedTweets = [...validTweets].sort((a, b) => {
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
+  const sortedTweets = [...validTweets].sort((a, b) => 
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
 
-  // Filter and sort prediction tweets
-  const validPredictionTweets = predictions
+  // Prepare prediction tweets once
+  const predictionTweets = predictions
     ?.map(p => p.tweet)
     .filter(tweet => tweet && tweet.created_at) || [];
   
-  const sortedPredictionTweets = [...validPredictionTweets].sort((a, b) => {
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
+  const sortedPredictionTweets = [...predictionTweets].sort((a, b) => 
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
 
-  console.log('Valid tweets count:', validTweets.length);
-  console.log('Sorted tweets count:', sortedTweets.length);
-  console.log('Prediction tweets count:', sortedPredictionTweets.length);
+  console.log('Tweet counts:', {
+    valid: validTweets.length,
+    sorted: sortedTweets.length,
+    predictions: sortedPredictionTweets.length
+  });
   
   return (
     <Tabs defaultValue="predictions" className="w-full">
