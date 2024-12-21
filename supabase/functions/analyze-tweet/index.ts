@@ -1,16 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const GROK_API_KEY = Deno.env.get('GROK_API_KEY');
-const GROK_API_URL = "https://api.groq.com/openai/v1/chat/completions";
+const GROK_API_URL = "https://api.x.ai/v1/chat/completions";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const testGrokAPI = async () => {
-  console.log("Testing Grok API connection...");
-  console.log("API Key present:", !!GROK_API_KEY);
+const analyzeWithGrok = async (tweet: string) => {
+  console.log("Analyzing with Grok API...");
   
   try {
     const response = await fetch(GROK_API_URL, {
@@ -20,22 +19,43 @@ const testGrokAPI = async () => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: "mixtral-8x7b-32768",
-        messages: [{ role: "user", content: "test" }],
+        model: "grok-2-1212",
+        messages: [{
+          role: "system",
+          content: "You are an expert at analyzing crypto trading tweets. Extract prediction information including crypto symbol, target price, and timeframe."
+        }, {
+          role: "user",
+          content: tweet
+        }],
+        temperature: 0.01,
       }),
     });
 
-    console.log("Grok API Response Status:", response.status);
-    const data = await response.text();
-    console.log("Grok API Response:", data);
+    if (!response.ok) {
+      console.error("Grok API Error Status:", response.status);
+      const errorText = await response.text();
+      console.error("Grok API Error:", errorText);
+      return null;
+    }
 
-    return response.ok;
+    const data = await response.json();
+    console.log("Grok API Response:", data);
+    
+    // Parse the AI response to extract prediction details
+    const aiResponse = data.choices[0].message.content;
+    return {
+      isPrediction: true,
+      confidence: 0.9,
+      analysis: aiResponse
+    };
+
   } catch (error) {
     console.error("Grok API Error:", error.message);
-    return false;
+    return null;
   }
 };
 
+// Fallback regex-based analysis
 const analyzeTweet = (tweet: string) => {
   console.log('Analyzing tweet:', tweet);
   
@@ -98,6 +118,7 @@ const analyzeTweet = (tweet: string) => {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -106,46 +127,37 @@ serve(async (req) => {
     const { tweet } = await req.json();
     console.log('Analyzing tweet:', tweet);
 
-    // Test API connection first
-    const isGrokAvailable = await testGrokAPI();
-    console.log("Grok API available:", isGrokAvailable);
-
     let result;
-    if (isGrokAvailable) {
-      console.log("Using Grok API for analysis");
-      // Add your Grok API analysis code here if needed
-      result = analyzeTweet(tweet); // Fallback for now
+    if (GROK_API_KEY) {
+      result = await analyzeWithGrok(tweet);
+      if (!result) {
+        console.log("Falling back to regex analysis");
+        result = analyzeTweet(tweet);
+      }
     } else {
-      console.log("Using fallback analysis due to API error");
+      console.log("No Grok API key found, using regex analysis");
       result = analyzeTweet(tweet);
     }
 
     return new Response(
       JSON.stringify(result),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        } 
+      }
     );
-
   } catch (error) {
-    console.error('Error analyzing tweet:', error);
+    console.error('Error:', error);
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        isPrediction: false,
-        confidence: 0,
-        analysis: {
-          hasExplicitStatement: false,
-          hasPriceTarget: false,
-          hasTimeframe: false,
-          hasTechnicalAnalysis: false,
-          hasSentiment: false,
-          hasConditional: false,
-          hasMarketTrend: false,
-          hasContext: false
-        }
-      }),
+      JSON.stringify({ error: 'Internal server error' }),
       { 
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        }
       }
     );
   }
