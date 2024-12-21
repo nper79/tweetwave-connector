@@ -1,9 +1,39 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+
+const GROK_API_KEY = Deno.env.get('GROK_API_KEY');
+const GROK_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+const testGrokAPI = async () => {
+  console.log("Testing Grok API connection...");
+  console.log("API Key present:", !!GROK_API_KEY);
+  
+  try {
+    const response = await fetch(GROK_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${GROK_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: "mixtral-8x7b-32768",
+        messages: [{ role: "user", content: "test" }],
+      }),
+    });
+
+    console.log("Grok API Response Status:", response.status);
+    const data = await response.text();
+    console.log("Grok API Response:", data);
+
+    return response.ok;
+  } catch (error) {
+    console.error("Grok API Error:", error.message);
+    return false;
+  }
 };
 
 const analyzeTweet = (tweet: string) => {
@@ -76,8 +106,19 @@ serve(async (req) => {
     const { tweet } = await req.json();
     console.log('Analyzing tweet:', tweet);
 
-    const result = analyzeTweet(tweet);
-    console.log('Analysis result:', result);
+    // Test API connection first
+    const isGrokAvailable = await testGrokAPI();
+    console.log("Grok API available:", isGrokAvailable);
+
+    let result;
+    if (isGrokAvailable) {
+      console.log("Using Grok API for analysis");
+      // Add your Grok API analysis code here if needed
+      result = analyzeTweet(tweet); // Fallback for now
+    } else {
+      console.log("Using fallback analysis due to API error");
+      result = analyzeTweet(tweet);
+    }
 
     return new Response(
       JSON.stringify(result),
