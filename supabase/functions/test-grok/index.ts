@@ -15,28 +15,33 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Testing Grok API connection...");
-    console.log("API Key present:", !!GROK_API_KEY);
+    console.log("Starting Grok API test...");
     
     if (!GROK_API_KEY) {
+      console.error("GROK_API_KEY is not set");
       throw new Error("GROK_API_KEY is not set");
     }
 
-    console.log("Making request to Grok API...");
+    console.log("API Key present, making request to Grok API...");
+    
+    const requestBody = {
+      model: "grok-2-1212",
+      messages: [{
+        role: "user",
+        content: "Say hello!"
+      }],
+      temperature: 0.7,
+    };
+
+    console.log("Request body:", JSON.stringify(requestBody, null, 2));
+
     const response = await fetch(GROK_API_URL, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${GROK_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: "grok-2-1212",
-        messages: [{
-          role: "user",
-          content: "Say hello!"
-        }],
-        temperature: 0.7,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     console.log("Response status:", response.status);
@@ -48,7 +53,7 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log("API Response:", data);
+    console.log("API Response:", JSON.stringify(data, null, 2));
 
     return new Response(
       JSON.stringify({ success: true, data }),
