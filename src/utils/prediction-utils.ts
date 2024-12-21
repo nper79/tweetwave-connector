@@ -2,32 +2,43 @@ import { Tweet } from "@/types/twitter";
 import { supabase } from "@/integrations/supabase/client";
 
 const PREDICTION_KEYWORDS = [
-  // Price movement keywords
-  'target', 'expect', 'prediction', 'predict',
-  'will reach', 'going to', 'headed to',
+  // Explicit prediction keywords
+  'predict', 'will', 'expect', 'target', 'breakout',
+  'looking for', 'should reach', 'potential',
   // Timeframe keywords
   'soon', 'this week', 'next week', 'this month',
-  'by end of', 'tomorrow', 'tonight',
-  // Direction keywords
-  'pump', 'moon', 'rise', 'surge', 'rally',
-  'dip', 'drop', 'fall', 'decline',
+  'by end of', 'tomorrow', 'tonight', 'bull run',
   // Technical analysis
-  'support', 'resistance', 'breakout',
-  'pattern', 'trend', 'setup'
+  'support', 'resistance', 'breakout', 'pattern',
+  'trend', 'setup', 'buy zone', 'sell zone',
+  // Market sentiment
+  'bullish', 'bearish', 'explosive', 'momentum',
+  // Conditional keywords
+  'if', 'when', 'once', 'after',
+  // Market trends
+  'dominance', 'correlation', 'market cycle'
 ] as const;
 
 const TECHNICAL_ANALYSIS_TERMS = [
-  'wedge', 'pattern', 'trend', 'level',
-  'fibonacci', 'fib', 'retrace',
-  'channel', 'triangle', 'flag',
+  // Chart patterns
+  'wedge', 'pattern', 'trend', 'channel',
+  'triangle', 'flag', 'pennant',
   'head and shoulders', 'double top', 'double bottom',
+  // Technical indicators
   'support', 'resistance', 'breakout',
-  'accumulation', 'distribution'
+  'fibonacci', 'fib', 'retrace',
+  // Market structure
+  'accumulation', 'distribution',
+  'buy zone', 'sell zone',
+  // Trend analysis
+  'uptrend', 'downtrend', 'sideways',
+  'consolidation', 'momentum'
 ] as const;
 
 export const hasCryptoSymbol = (text: string): boolean => {
   // Match both $BTC style and plain BTC mentions
-  return /\$[A-Z]{2,}|(?:^|\s)(?:BTC|ETH|SOL|XRP|ADA|DOT|AVAX|MATIC)(?:\s|$)/.test(text);
+  // Extended to catch more crypto symbols
+  return /\$[A-Z]{2,}|(?:^|\s)(?:BTC|ETH|SOL|XRP|ADA|DOT|AVAX|MATIC|LINK|UNI|AAVE|SNX|SUSHI)(?:\s|$)/i.test(text);
 };
 
 export const hasPredictionKeyword = (text: string): boolean => {
@@ -45,6 +56,17 @@ interface AIAnalysis {
   crypto: string | null;
   targetPrice: number | null;
   confidence: number;
+  timeframe: string | null;
+  analysis: {
+    hasExplicitStatement: boolean;
+    hasPriceTarget: boolean;
+    hasTimeframe: boolean;
+    hasTechnicalAnalysis: boolean;
+    hasSentiment: boolean;
+    hasConditional: boolean;
+    hasMarketTrend: boolean;
+    hasContext: boolean;
+  };
   reasoning: string;
 }
 
@@ -78,8 +100,9 @@ export const isPredictionTweet = async (tweet: Tweet | null): Promise<boolean> =
     // First try AI analysis
     const aiAnalysis = await analyzeTweetWithAI(tweet);
     if (aiAnalysis) {
-      console.log('AI confidence for prediction:', aiAnalysis.confidence);
-      return aiAnalysis.isPrediction && aiAnalysis.confidence > 0.5;
+      console.log('AI analysis criteria met:', aiAnalysis.analysis);
+      // Consider it a prediction if it meets multiple criteria with high confidence
+      return aiAnalysis.isPrediction && aiAnalysis.confidence > 0.6;
     }
   } catch (error) {
     console.error('AI analysis failed, falling back to regex:', error);
@@ -91,20 +114,20 @@ export const isPredictionTweet = async (tweet: Tweet | null): Promise<boolean> =
   const hasPrediction = hasPredictionKeyword(text);
   const hasTA = hasTechnicalAnalysis(text);
   
-  // Look for price patterns
+  // Look for price patterns (including K/k for thousands)
   const hasPriceTarget = /\$\d+(?:,\d{3})*(?:\.\d+)?[kK]?|\d+(?:,\d{3})*(?:\.\d+)?[kK]?\s*(?:dollars?|usd)/i.test(tweet.text);
   
-  // Check for timeframe mentions
-  const hasTimeframe = /(?:today|tomorrow|tonight|this week|next week|this month|soon)/i.test(text);
+  // Enhanced timeframe detection
+  const hasTimeframe = /(?:today|tomorrow|tonight|this week|next week|this month|soon|bull run|cycle|trend)/i.test(text);
   
   // Return true if we have a crypto symbol AND either:
-  // 1. A price target
-  // 2. Technical analysis terms
-  // 3. A prediction keyword with a timeframe
+  // 1. A price target with timeframe
+  // 2. Technical analysis terms with prediction keywords
+  // 3. Multiple prediction indicators present
   return hasCrypto && (
-    hasPriceTarget ||
-    hasTA ||
-    (hasPrediction && hasTimeframe)
+    (hasPriceTarget && hasTimeframe) ||
+    (hasTA && hasPrediction) ||
+    (hasPrediction && hasTimeframe && (hasPriceTarget || hasTA))
   );
 };
 
@@ -118,9 +141,9 @@ export const extractCryptoSymbol = async (text: string, tweet: Tweet): Promise<s
     console.error('Error getting crypto from AI, falling back to regex:', error);
   }
 
-  // Enhanced regex pattern to catch both $BTC and plain BTC
-  const symbolMatch = text.match(/\$([A-Z]{2,})|(?:^|\s)(BTC|ETH|SOL|XRP|ADA|DOT|AVAX|MATIC)(?:\s|$)/);
-  return symbolMatch ? (symbolMatch[1] || symbolMatch[2]) : 'BTC';
+  // Enhanced regex pattern to catch more crypto symbols
+  const symbolMatch = text.match(/\$([A-Z]{2,})|(?:^|\s)(BTC|ETH|SOL|XRP|ADA|DOT|AVAX|MATIC|LINK|UNI|AAVE|SNX|SUSHI)(?:\s|$)/i);
+  return symbolMatch ? (symbolMatch[1] || symbolMatch[2]).toUpperCase() : 'BTC';
 };
 
 export const extractTargetPrice = async (text: string, tweet: Tweet): Promise<number | null> => {
@@ -134,10 +157,14 @@ export const extractTargetPrice = async (text: string, tweet: Tweet): Promise<nu
   }
 
   const pricePatterns = [
+    // Target price patterns
     /target:?\s*\$?(\d+(?:,\d{3})*(?:\.\d+)?)[kK]?/i,
     /price:?\s*\$?(\d+(?:,\d{3})*(?:\.\d+)?)[kK]?/i,
+    // General price mentions
     /\$(\d+(?:,\d{3})*(?:\.\d+)?)[kK]?/,
-    /(\d+(?:,\d{3})*(?:\.\d+)?)[kK]?\s*(?:dollars?|usd)/i
+    /(\d+(?:,\d{3})*(?:\.\d+)?)[kK]?\s*(?:dollars?|usd)/i,
+    // Range patterns
+    /between\s*\$?(\d+(?:,\d{3})*(?:\.\d+)?)[kK]?\s*(?:and|-)\s*\$?(\d+(?:,\d{3})*(?:\.\d+)?)[kK]?/i
   ];
 
   for (const pattern of pricePatterns) {

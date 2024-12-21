@@ -28,31 +28,64 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a crypto prediction analyzer. Analyze tweets to identify if they contain cryptocurrency price predictions.
-            Consider a tweet as a prediction if it:
-            1. Mentions a specific cryptocurrency (usually with $ symbol)
-            2. Contains either:
-               - A specific price target (e.g., "$45k", "45,000")
-               - A clear directional movement with timeframe (e.g., "will pump this week", "dropping to X by Friday")
-               - Technical analysis leading to a price conclusion
-            
-            Return a JSON object with:
-            - isPrediction (boolean): true if tweet contains a price prediction
-            - crypto (string): the cryptocurrency symbol (e.g., "BTC")
-            - targetPrice (number): predicted price target (null if no specific target)
-            - confidence (number): 0-1 score of how confident this is a real prediction
-            - reasoning (string): brief explanation of why this is or isn't a prediction
-            
-            Examples of predictions:
-            - "$BTC looking strong, target $45k by end of month"
-            - "ETH will pump to $3000 this week"
-            - "$SOL forming a bull flag, expecting $120 soon"
-            - "BTC headed down to 38k support level"
-            
-            Examples of non-predictions:
-            - "BTC chart looking bullish"
-            - "Love the SOL ecosystem"
-            - "ETH having a good day"`
+            content: `You are a crypto prediction analyzer. Analyze tweets to identify cryptocurrency price predictions using these specific criteria:
+
+1. Explicit Prediction Statements:
+- Look for direct statements using words like "predict", "will go", "expect"
+- Identify implicit predictions through phrases like "breakout targets", "looking for", "should reach"
+
+2. Price Targets:
+- Identify specific price levels (e.g., "$0.06", "$2.50")
+- Look for target prices with entry/exit points
+- Note both absolute values and percentage changes
+
+3. Time-bound Forecasts:
+- Identify timeframes ("next few months", "this week", "by EOY")
+- Look for both specific dates and general timeframes
+- Consider market cycle references (e.g., "this bull run")
+
+4. Technical Analysis Indicators:
+- Recognize TA terms: "breakout", "support", "resistance", "buy zone"
+- Look for chart pattern references
+- Consider trend analysis mentions
+
+5. Sentiment Analysis:
+- Evaluate bullish/bearish language
+- Look for emotional indicators ("explosive", "huge potential")
+- Consider market sentiment references
+
+6. Conditional Predictions:
+- Identify "if/then" statements
+- Look for cause-effect relationships
+- Note market condition dependencies
+
+7. Market Trends:
+- Recognize broader market predictions
+- Look for dominance/correlation references
+- Consider macro trend analysis
+
+8. Contextual Clarity:
+- Verify specific cryptocurrency mentions
+- Check for chart/data references
+- Ensure clear subject matter
+
+Return a JSON object with:
+- isPrediction (boolean): true if tweet meets prediction criteria
+- crypto (string): the cryptocurrency symbol
+- targetPrice (number): predicted price target (null if no specific target)
+- confidence (number): 0-1 score based on how many criteria are met
+- timeframe (string): identified timeframe (null if none)
+- analysis: {
+  hasExplicitStatement: boolean,
+  hasPriceTarget: boolean,
+  hasTimeframe: boolean,
+  hasTechnicalAnalysis: boolean,
+  hasSentiment: boolean,
+  hasConditional: boolean,
+  hasMarketTrend: boolean,
+  hasContext: boolean
+}
+- reasoning (string): brief explanation of the analysis`
           },
           {
             role: 'user',
@@ -64,8 +97,10 @@ serve(async (req) => {
     });
 
     const data = await response.json();
+    console.log('AI Response:', data);
+    
     const analysis = JSON.parse(data.choices[0].message.content);
-    console.log('AI Analysis:', analysis);
+    console.log('Parsed Analysis:', analysis);
 
     return new Response(
       JSON.stringify(analysis),
