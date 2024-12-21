@@ -32,10 +32,7 @@ serve(async (req) => {
             - crypto (string): the cryptocurrency symbol (e.g., "BTC")
             - targetPrice (number): predicted price target
             - confidence (number): 0-1 score of how confident this is a real prediction
-            - reasoning (string): brief explanation of why this is or isn't a prediction
-            
-            Example of a prediction: "$BTC looking strong, target $45k by end of month"
-            Example of not a prediction: "$BTC chart looking bullish"`
+            - reasoning (string): brief explanation of why this is or isn't a prediction`
           },
           {
             role: 'user',
@@ -47,10 +44,11 @@ serve(async (req) => {
     })
 
     const data = await response.json()
-    console.log('AI Analysis:', data.choices[0].message.content)
+    const analysis = JSON.parse(data.choices[0].message.content)
+    console.log('AI Analysis:', analysis)
 
     return new Response(
-      JSON.stringify(data.choices[0].message.content),
+      JSON.stringify(analysis),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {

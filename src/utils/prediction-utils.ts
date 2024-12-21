@@ -40,6 +40,7 @@ interface AIAnalysis {
 export const analyzeTweetWithAI = async (tweet: Tweet): Promise<AIAnalysis | null> => {
   try {
     console.log('Analyzing tweet with AI:', tweet.text);
+    
     const { data, error } = await supabase.functions.invoke('analyze-tweet', {
       body: { tweet: tweet.text }
     });
@@ -49,13 +50,13 @@ export const analyzeTweetWithAI = async (tweet: Tweet): Promise<AIAnalysis | nul
       return null;
     }
 
-    // Parse the response which comes as a string
-    const analysis = typeof data === 'string' ? JSON.parse(data) : data;
+    // The response should already be parsed JSON
+    const analysis = data as AIAnalysis;
     console.log('AI Analysis result:', analysis);
 
     return analysis;
   } catch (error) {
-    console.error('Error parsing AI analysis:', error);
+    console.error('Error in AI analysis:', error);
     return null;
   }
 };
@@ -68,7 +69,7 @@ export const isPredictionTweet = async (tweet: Tweet | null): Promise<boolean> =
     const aiAnalysis = await analyzeTweetWithAI(tweet);
     if (aiAnalysis) {
       console.log('AI confidence for prediction:', aiAnalysis.confidence);
-      return aiAnalysis.isPrediction && aiAnalysis.confidence > 0.7;
+      return aiAnalysis.isPrediction && aiAnalysis.confidence > 0.5;
     }
   } catch (error) {
     console.error('AI analysis failed, falling back to regex:', error);
@@ -89,8 +90,8 @@ export const extractCryptoSymbol = async (text: string, tweet: Tweet): Promise<s
     console.error('Error getting crypto from AI, falling back to regex:', error);
   }
 
-  const match = text.match(/\$[A-Z]{2,}/);
-  return match ? match[0].replace(/^\$/, '') : 'BTC';
+  const match = text.match(/\$([A-Z]{2,})/);
+  return match ? match[1] : 'BTC';
 };
 
 export const extractTargetPrice = async (text: string, tweet: Tweet): Promise<number | null> => {
