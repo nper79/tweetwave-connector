@@ -2,6 +2,7 @@ import { Search, Trophy, Bot } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export const LeaderboardHeader = () => {
   const { toast } = useToast();
@@ -13,29 +14,34 @@ export const LeaderboardHeader = () => {
         description: "Making a test call to the API",
       });
 
-      const response = await fetch("/functions/v1/test-grok");
-      const data = await response.json();
+      const { data, error } = await supabase.functions.invoke('test-grok', {
+        body: { message: "Hello from TweetWave!" }
+      });
 
-      if (data.success) {
-        toast({
-          title: "Grok API Test Successful",
-          description: "Check the Edge Function logs for details",
-          variant: "default",
-        });
-      } else {
+      if (error) {
+        console.error("Grok API test error:", error);
         toast({
           title: "Grok API Test Failed",
-          description: data.error || "Unknown error occurred",
+          description: error.message || "Unknown error occurred",
           variant: "destructive",
         });
+        return;
       }
+
+      toast({
+        title: "Grok API Test Successful",
+        description: "Check the Edge Function logs for details",
+        variant: "default",
+      });
+      
+      console.log("Grok API test response:", data);
     } catch (error) {
+      console.error("Grok API test error:", error);
       toast({
         title: "Error",
         description: "Failed to test Grok API. Check console for details.",
         variant: "destructive",
       });
-      console.error("Grok API test error:", error);
     }
   };
 
