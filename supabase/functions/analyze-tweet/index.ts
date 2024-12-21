@@ -26,14 +26,16 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a crypto prediction analyzer. Extract prediction details from tweets.
+            content: `You are a crypto prediction analyzer. Analyze tweets to identify if they contain cryptocurrency price predictions.
             Return a JSON object with:
             - isPrediction (boolean): true if tweet contains a price prediction
             - crypto (string): the cryptocurrency symbol (e.g., "BTC")
-            - targetPrice (number): predicted price
+            - targetPrice (number): predicted price target
             - confidence (number): 0-1 score of how confident this is a real prediction
-            - reasoning (string): brief explanation of the analysis
-            Return null values for fields if they can't be determined.`
+            - reasoning (string): brief explanation of why this is or isn't a prediction
+            
+            Example of a prediction: "$BTC looking strong, target $45k by end of month"
+            Example of not a prediction: "$BTC chart looking bullish"`
           },
           {
             role: 'user',
@@ -45,7 +47,7 @@ serve(async (req) => {
     })
 
     const data = await response.json()
-    console.log('AI Analysis:', data)
+    console.log('AI Analysis:', data.choices[0].message.content)
 
     return new Response(
       JSON.stringify(data.choices[0].message.content),

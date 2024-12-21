@@ -39,6 +39,7 @@ interface AIAnalysis {
 
 export const analyzeTweetWithAI = async (tweet: Tweet): Promise<AIAnalysis | null> => {
   try {
+    console.log('Analyzing tweet with AI:', tweet.text);
     const { data, error } = await supabase.functions.invoke('analyze-tweet', {
       body: { tweet: tweet.text }
     });
@@ -48,27 +49,60 @@ export const analyzeTweetWithAI = async (tweet: Tweet): Promise<AIAnalysis | nul
       return null;
     }
 
-    return data;
+    // Parse the response which comes as a string
+    const analysis = typeof data === 'string' ? JSON.parse(data) : data;
+    console.log('AI Analysis result:', analysis);
+
+    return analysis;
   } catch (error) {
     console.error('Error parsing AI analysis:', error);
     return null;
   }
 };
 
-export const isPredictionTweet = (tweet: Tweet | null): boolean => {
+export const isPredictionTweet = async (tweet: Tweet | null): Promise<boolean> => {
   if (!tweet?.text) return false;
   
-  // Basic check with rules
+  try {
+    // First try AI analysis
+    const aiAnalysis = await analyzeTweetWithAI(tweet);
+    if (aiAnalysis) {
+      console.log('AI confidence for prediction:', aiAnalysis.confidence);
+      return aiAnalysis.isPrediction && aiAnalysis.confidence > 0.7;
+    }
+  } catch (error) {
+    console.error('AI analysis failed, falling back to regex:', error);
+  }
+  
+  // Fallback to basic checks if AI fails
   return hasCryptoSymbol(tweet.text) && 
     (hasPredictionKeyword(tweet.text) || hasTechnicalAnalysis(tweet.text));
 };
 
-export const extractCryptoSymbol = (text: string): string => {
+export const extractCryptoSymbol = async (text: string, tweet: Tweet): Promise<string> => {
+  try {
+    const aiAnalysis = await analyzeTweetWithAI(tweet);
+    if (aiAnalysis?.crypto) {
+      return aiAnalysis.crypto;
+    }
+  } catch (error) {
+    console.error('Error getting crypto from AI, falling back to regex:', error);
+  }
+
   const match = text.match(/\$[A-Z]{2,}/);
   return match ? match[0].replace(/^\$/, '') : 'BTC';
 };
 
-export const extractTargetPrice = (text: string): number | null => {
+export const extractTargetPrice = async (text: string, tweet: Tweet): Promise<number | null> => {
+  try {
+    const aiAnalysis = await analyzeTweetWithAI(tweet);
+    if (aiAnalysis?.targetPrice) {
+      return aiAnalysis.targetPrice;
+    }
+  } catch (error) {
+    console.error('Error getting target price from AI, falling back to regex:', error);
+  }
+
   const pricePatterns = [
     /target:?\s*\$?(\d+(?:,\d{3})*(?:\.\d+)?)[kK]?/i,
     /price:?\s*\$?(\d+(?:,\d{3})*(?:\.\d+)?)[kK]?/i,
