@@ -1,35 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ExternalLink, Target, Clock } from "lucide-react";
+import { Target } from "lucide-react";
 import { useTwitterTimeline } from "@/hooks/use-twitter";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tweet } from "@/types/twitter";
-import { formatDistanceToNow } from "date-fns";
-import { isPredictionTweet } from "@/utils/prediction-utils";
-import { useEffect, useState } from "react";
+import { usePredictionFiltering } from "@/hooks/use-prediction-filtering";
+import { PredictionCard } from "@/components/predictions/PredictionCard";
 
 export const LatestPredictions = () => {
   const { data: tweets, isLoading, error } = useTwitterTimeline("SolbergInvest");
-  const [predictionsFromTweets, setPredictionsFromTweets] = useState<Tweet[]>([]);
-
-  useEffect(() => {
-    const filterPredictions = async () => {
-      if (!tweets) return;
-      
-      const validTweets = tweets.filter((tweet): tweet is Tweet => Boolean(tweet));
-      const predictions = [];
-      
-      for (const tweet of validTweets) {
-        const isPrediction = await isPredictionTweet(tweet);
-        if (isPrediction) {
-          predictions.push(tweet);
-        }
-      }
-      
-      setPredictionsFromTweets(predictions.slice(0, 3));
-    };
-
-    filterPredictions();
-  }, [tweets]);
+  const predictionsFromTweets = usePredictionFiltering(tweets);
 
   if (isLoading) {
     return (
@@ -86,21 +64,7 @@ export const LatestPredictions = () => {
       <CardContent>
         <div className="space-y-4">
           {predictionsFromTweets.map((tweet) => (
-            <div key={tweet.tweet_id} className="p-3 rounded-md bg-gray-50 dark:bg-gray-900">
-              <p className="text-sm text-gray-900 dark:text-gray-100 mb-2">{tweet.text}</p>
-              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                <Clock className="h-3 w-3" />
-                {formatDistanceToNow(new Date(tweet.created_at), { addSuffix: true })}
-                <a
-                  href={`https://twitter.com/SolbergInvest/status/${tweet.tweet_id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 hover:text-indigo-500 transition-colors ml-auto"
-                >
-                  View <ExternalLink className="h-3 w-3" />
-                </a>
-              </div>
-            </div>
+            <PredictionCard key={tweet.tweet_id} tweet={tweet} />
           ))}
           {predictionsFromTweets.length === 0 && (
             <div className="text-center p-4 text-gray-500 dark:text-gray-400">

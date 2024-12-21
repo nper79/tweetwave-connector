@@ -1,6 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { TrendingUp, TrendingDown, Award, Medal } from "lucide-react";
 import { Link } from "react-router-dom";
+import { TraderMetrics } from "@/components/traders/TraderMetrics";
+import { TraderBadge } from "@/components/traders/TraderBadge";
 
 interface Trader {
   rank: number;
@@ -63,56 +64,20 @@ export const LeaderboardTable = () => {
         <TableBody>
           {traders.map((trader) => (
             <TableRow key={trader.rank} className="hover:bg-gray-50/50 dark:hover:bg-gray-900/50">
-              <TableCell className="font-medium">
-                <div className="flex items-center gap-2">
-                  {trader.rank === 1 && <Award className="h-5 w-5 text-yellow-500" />}
-                  {trader.rank === 2 && <Medal className="h-5 w-5 text-gray-400" />}
-                  {trader.rank === 3 && <Medal className="h-5 w-5 text-amber-600" />}
-                  {trader.rank}
-                </div>
+              <TableCell>
+                <TraderBadge rank={trader.rank} badge={trader.badge} streak={trader.streak} />
               </TableCell>
               <TableCell>
                 <Link to={`/profile/${trader.name}`} className="hover:text-blue-600 transition-colors">
-                  <div className="flex items-center gap-2">
-                    <div>
-                      <div className="font-semibold flex items-center gap-2">
-                        {trader.name}
-                        <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded-full">
-                          {trader.badge}
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">{trader.streak} streak</div>
-                    </div>
-                  </div>
+                  {trader.name}
                 </Link>
               </TableCell>
-              <TableCell>
-                <div>
-                  <div className="font-medium">{trader.predictions}</div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">total</div>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div>
-                  <div className="font-medium">{trader.successRate}%</div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">success</div>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div>
-                  <div className="text-green-500 font-medium flex items-center gap-1">
-                    <TrendingUp className="h-4 w-4" />
-                    +{trader.roi}%
-                  </div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">total return</div>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className={`flex items-center gap-1 ${trader.change24h >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                  {trader.change24h >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                  {trader.change24h}%
-                </div>
-              </TableCell>
+              <TraderMetrics
+                predictions={trader.predictions}
+                successRate={trader.successRate}
+                roi={trader.roi}
+                change24h={trader.change24h}
+              />
             </TableRow>
           ))}
         </TableBody>
