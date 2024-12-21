@@ -29,10 +29,15 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: "grok-2-1212",
+        model: "x-ai/grok-vision-beta",
         messages: [{
           role: "user",
-          content: "Hello! This is a test message. Please respond if you can read this.",
+          content: [
+            {
+              type: "text",
+              text: "Hello! This is a test message. Please respond if you can read this."
+            }
+          ]
         }],
         temperature: 0.01,
       }),
