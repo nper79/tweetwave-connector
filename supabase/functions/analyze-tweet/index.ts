@@ -6,6 +6,35 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const fallbackAnalysis = (tweet: string) => {
+  // Basic analysis without API
+  const hasPriceTarget = /\$\d+(?:,\d{3})*(?:\.\d+)?[kK]?|\d+(?:,\d{3})*(?:\.\d+)?[kK]?\s*(?:dollars?|usd)/i.test(tweet);
+  const hasCrypto = /\$[A-Z]{2,}|(?:^|\s)(?:BTC|ETH|SOL|XRP|ADA|DOT|AVAX|MATIC|LINK|UNI|AAVE|SNX|SUSHI)(?:\s|$)/i.test(tweet);
+  const hasPredictionKeyword = /(predict|will|expect|target|breakout|soon|this week|next week|this month)/i.test(tweet);
+  
+  const cryptoMatch = tweet.match(/\$([A-Z]{2,})|(?:^|\s)(BTC|ETH|SOL|XRP|ADA|DOT|AVAX|MATIC|LINK|UNI|AAVE|SNX|SUSHI)(?:\s|$)/i);
+  const priceMatch = tweet.match(/\$(\d+(?:,\d{3})*(?:\.\d+)?)[kK]?/);
+  
+  return {
+    isPrediction: hasPriceTarget && hasCrypto && hasPredictionKeyword,
+    crypto: cryptoMatch ? (cryptoMatch[1] || cryptoMatch[2]).toUpperCase() : null,
+    targetPrice: priceMatch ? parseFloat(priceMatch[1].replace(/,/g, '')) : null,
+    confidence: 0.7,
+    timeframe: null,
+    analysis: {
+      hasExplicitStatement: hasPredictionKeyword,
+      hasPriceTarget,
+      hasTimeframe: /(soon|this week|next week|this month)/i.test(tweet),
+      hasTechnicalAnalysis: /(support|resistance|breakout|trend)/i.test(tweet),
+      hasSentiment: /(bullish|bearish|explosive|🚀)/i.test(tweet),
+      hasConditional: /(if|when|once|after)/i.test(tweet),
+      hasMarketTrend: /(dominance|correlation|cycle)/i.test(tweet),
+      hasContext: true
+    },
+    reasoning: "Fallback analysis using pattern matching"
+  };
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -17,42 +46,48 @@ serve(async (req) => {
 
     const grokApiKey = Deno.env.get('GROK_API_KEY');
     if (!grokApiKey) {
-      throw new Error('GROK_API_KEY not found in environment variables');
+      console.log('No GROK_API_KEY found, using fallback analysis');
+      return new Response(
+        JSON.stringify(fallbackAnalysis(tweet)),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Test the API key first with a simpler endpoint
-    console.log('Testing Grok API connection...');
-    const testResponse = await fetch('https://api.grok.ai/v1/models', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${grokApiKey}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    });
+    try {
+      // Test API connection
+      console.log('Testing Grok API connection...');
+      const testResponse = await fetch('https://api.grok.ai/v1/models', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${grokApiKey}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      });
 
-    const testResponseText = await testResponse.text();
-    console.log('Test response:', testResponseText);
+      if (!testResponse.ok) {
+        console.log('Grok API connection failed, using fallback analysis');
+        return new Response(
+          JSON.stringify(fallbackAnalysis(tweet)),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
-    if (!testResponse.ok) {
-      throw new Error(`Failed to connect to Grok API: ${testResponse.status} - ${testResponseText}`);
-    }
-
-    console.log('Grok API connection successful, proceeding with analysis...');
-
-    const response = await fetch('https://api.grok.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${grokApiKey}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'grok-1',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a cryptocurrency prediction analyzer. Your task is to analyze tweets and extract cryptocurrency price predictions. Return ONLY a JSON object with no additional text.
+      // Proceed with Grok API analysis
+      console.log('Grok API connection successful, proceeding with analysis...');
+      const response = await fetch('https://api.grok.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${grokApiKey}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'grok-1',
+          messages: [
+            {
+              role: 'system',
+              content: `You are a cryptocurrency prediction analyzer. Your task is to analyze tweets and extract cryptocurrency price predictions. Return ONLY a JSON object with no additional text.
 
 Analyze based on these criteria:
 1. Look for explicit predictions ("predict", "will", "expect", "target", "might", "could")
@@ -82,64 +117,53 @@ Return this exact JSON structure:
   },
   "reasoning": string
 }`
-          },
-          {
-            role: 'user',
-            content: tweet
-          }
-        ],
-        temperature: 0.1,
-        max_tokens: 1000,
-      }),
-    });
+            },
+            {
+              role: 'user',
+              content: tweet
+            }
+          ],
+          temperature: 0.1,
+          max_tokens: 1000,
+        }),
+      });
 
-    const responseText = await response.text();
-    console.log('Raw Grok API response:', responseText);
-
-    if (!response.ok) {
-      throw new Error(`Grok API error: ${response.status} - ${responseText}`);
-    }
-
-    let data;
-    try {
-      data = JSON.parse(responseText);
-    } catch (error) {
-      console.error('Error parsing Grok response:', error);
-      throw new Error(`Invalid JSON response from Grok API: ${responseText}`);
-    }
-
-    console.log('Parsed Grok Response:', data);
-    
-    if (!data.choices?.[0]?.message?.content) {
-      throw new Error('Invalid response structure from Grok');
-    }
-
-    let analysis;
-    try {
-      analysis = JSON.parse(data.choices[0].message.content);
-      console.log('Parsed Analysis:', analysis);
-
-      // Enhance prediction detection for common patterns
-      if (
-        (tweet.includes('🚀') && /\d+[xX]/.test(tweet)) || // Rocket emoji with multiplier
-        /\$?\d+(?:,\d{3})*(?:\.\d+)?[kK]?\s*(?:target|prediction)/i.test(tweet) || // Price targets
-        /(will|gonna|going to)\s+(?:moon|pump|explode)/i.test(tweet) // Common prediction phrases
-      ) {
-        analysis.isPrediction = true;
-        analysis.confidence = Math.max(analysis.confidence, 0.7);
-        analysis.analysis.hasExplicitStatement = true;
+      if (!response.ok) {
+        console.log('Grok API analysis failed, using fallback analysis');
+        return new Response(
+          JSON.stringify(fallbackAnalysis(tweet)),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
+      const data = await response.json();
+      console.log('Grok API Response:', data);
+
+      if (!data.choices?.[0]?.message?.content) {
+        console.log('Invalid Grok API response format, using fallback analysis');
+        return new Response(
+          JSON.stringify(fallbackAnalysis(tweet)),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      let analysis = JSON.parse(data.choices[0].message.content);
+      console.log('Parsed Analysis:', analysis);
+
+      return new Response(
+        JSON.stringify(analysis),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+
     } catch (error) {
-      console.error('Error parsing Grok response content:', error);
-      console.log('Raw Grok response content:', data.choices[0].message.content);
-      throw new Error('Failed to parse Grok analysis result');
+      console.error('Error with Grok API:', error);
+      console.log('Using fallback analysis due to API error');
+      return new Response(
+        JSON.stringify(fallbackAnalysis(tweet)),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    return new Response(
-      JSON.stringify(analysis),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
   } catch (error) {
     console.error('Error analyzing tweet:', error);
     return new Response(
