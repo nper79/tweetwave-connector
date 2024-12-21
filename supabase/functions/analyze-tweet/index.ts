@@ -9,6 +9,7 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -28,11 +29,11 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a crypto prediction analyzer. Analyze tweets to identify cryptocurrency price predictions using these specific criteria:
+            content: `You are a cryptocurrency prediction analyzer. Analyze tweets to identify price predictions using these specific criteria:
 
 1. Explicit Prediction Statements:
-- Look for direct statements using words like "predict", "will go", "expect"
-- Identify implicit predictions through phrases like "breakout targets", "looking for", "should reach"
+- Look for direct statements using "predict", "will go", "expect"
+- Identify implicit predictions through "breakout targets", "looking for", "should reach"
 
 2. Price Targets:
 - Identify specific price levels (e.g., "$0.06", "$2.50")
@@ -70,22 +71,24 @@ serve(async (req) => {
 - Ensure clear subject matter
 
 Return a JSON object with:
-- isPrediction (boolean): true if tweet meets prediction criteria
-- crypto (string): the cryptocurrency symbol
-- targetPrice (number): predicted price target (null if no specific target)
-- confidence (number): 0-1 score based on how many criteria are met
-- timeframe (string): identified timeframe (null if none)
-- analysis: {
-  hasExplicitStatement: boolean,
-  hasPriceTarget: boolean,
-  hasTimeframe: boolean,
-  hasTechnicalAnalysis: boolean,
-  hasSentiment: boolean,
-  hasConditional: boolean,
-  hasMarketTrend: boolean,
-  hasContext: boolean
-}
-- reasoning (string): brief explanation of the analysis`
+{
+  "isPrediction": boolean,
+  "crypto": string | null,
+  "targetPrice": number | null,
+  "confidence": number,
+  "timeframe": string | null,
+  "analysis": {
+    "hasExplicitStatement": boolean,
+    "hasPriceTarget": boolean,
+    "hasTimeframe": boolean,
+    "hasTechnicalAnalysis": boolean,
+    "hasSentiment": boolean,
+    "hasConditional": boolean,
+    "hasMarketTrend": boolean,
+    "hasContext": boolean
+  },
+  "reasoning": string
+}`
           },
           {
             role: 'user',
@@ -93,14 +96,25 @@ Return a JSON object with:
           }
         ],
         temperature: 0.1,
+        max_tokens: 1000,
       }),
     });
 
     const data = await response.json();
     console.log('AI Response:', data);
     
-    const analysis = JSON.parse(data.choices[0].message.content);
-    console.log('Parsed Analysis:', analysis);
+    if (!data.choices?.[0]?.message?.content) {
+      throw new Error('Invalid response from OpenAI');
+    }
+
+    let analysis;
+    try {
+      analysis = JSON.parse(data.choices[0].message.content);
+    } catch (error) {
+      console.error('Error parsing AI response:', error);
+      console.log('Raw AI response:', data.choices[0].message.content);
+      throw new Error('Failed to parse AI analysis');
+    }
 
     return new Response(
       JSON.stringify(analysis),
@@ -109,7 +123,21 @@ Return a JSON object with:
   } catch (error) {
     console.error('Error analyzing tweet:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        isPrediction: false,
+        confidence: 0,
+        analysis: {
+          hasExplicitStatement: false,
+          hasPriceTarget: false,
+          hasTimeframe: false,
+          hasTechnicalAnalysis: false,
+          hasSentiment: false,
+          hasConditional: false,
+          hasMarketTrend: false,
+          hasContext: false
+        }
+      }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
