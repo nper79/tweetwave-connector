@@ -20,6 +20,21 @@ serve(async (req) => {
       throw new Error('GROK_API_KEY not found in environment variables');
     }
 
+    // Test the API key first
+    console.log('Testing Grok API connection...');
+    const testResponse = await fetch('https://api.xai.com/v1/models', {
+      headers: {
+        'Authorization': `Bearer ${grokApiKey}`,
+      },
+    });
+
+    if (!testResponse.ok) {
+      console.error('Grok API test failed:', await testResponse.text());
+      throw new Error(`Failed to connect to Grok API: ${testResponse.statusText}`);
+    }
+
+    console.log('Grok API connection successful, proceeding with analysis...');
+
     const response = await fetch('https://api.xai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -71,6 +86,11 @@ Return this exact JSON structure:
         max_tokens: 1000,
       }),
     });
+
+    if (!response.ok) {
+      console.error('Grok API error:', await response.text());
+      throw new Error(`Grok API error: ${response.statusText}`);
+    }
 
     const data = await response.json();
     console.log('Grok Response:', data);
