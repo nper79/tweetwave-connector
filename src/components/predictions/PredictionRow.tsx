@@ -14,11 +14,29 @@ interface PredictionRowProps {
 }
 
 export const PredictionRow = ({ prediction }: PredictionRowProps) => {
-  const formatPrice = (price: number) => {
-    return price < 1 ? `$${price.toFixed(6)}` : `$${price.toFixed(2)}`;
+  const formatPrice = (price: number | null | undefined) => {
+    if (price === null || price === undefined) return "N/A";
+    
+    try {
+      const numPrice = Number(price);
+      if (isNaN(numPrice)) return "N/A";
+      
+      return numPrice < 1 ? `$${numPrice.toFixed(6)}` : `$${numPrice.toFixed(2)}`;
+    } catch (error) {
+      console.error('Error formatting price:', error);
+      return "N/A";
+    }
   };
 
   const formatROI = (roi: number) => {
+    if (typeof roi !== 'number' || isNaN(roi)) {
+      return (
+        <div className="flex items-center gap-1 text-gray-400">
+          N/A
+        </div>
+      );
+    }
+
     return (
       <div className="flex items-center gap-1 text-green-500">
         <ArrowUpIcon className="h-4 w-4" />
