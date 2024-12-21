@@ -20,17 +20,22 @@ serve(async (req) => {
       throw new Error('GROK_API_KEY not found in environment variables');
     }
 
-    // Test the API key first
+    // Test the API key first with a simpler endpoint
     console.log('Testing Grok API connection...');
     const testResponse = await fetch('https://api.xai.com/v1/models', {
+      method: 'GET',
       headers: {
         'Authorization': `Bearer ${grokApiKey}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
     });
 
+    const testResponseText = await testResponse.text();
+    console.log('Test response:', testResponseText);
+
     if (!testResponse.ok) {
-      console.error('Grok API test failed:', await testResponse.text());
-      throw new Error(`Failed to connect to Grok API: ${testResponse.statusText}`);
+      throw new Error(`Failed to connect to Grok API: ${testResponse.status} - ${testResponseText}`);
     }
 
     console.log('Grok API connection successful, proceeding with analysis...');
@@ -40,6 +45,7 @@ serve(async (req) => {
       headers: {
         'Authorization': `Bearer ${grokApiKey}`,
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       body: JSON.stringify({
         model: 'grok-2-vision-1212',
@@ -87,16 +93,25 @@ Return this exact JSON structure:
       }),
     });
 
+    const responseText = await response.text();
+    console.log('Raw Grok API response:', responseText);
+
     if (!response.ok) {
-      console.error('Grok API error:', await response.text());
-      throw new Error(`Grok API error: ${response.statusText}`);
+      throw new Error(`Grok API error: ${response.status} - ${responseText}`);
     }
 
-    const data = await response.json();
-    console.log('Grok Response:', data);
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (error) {
+      console.error('Error parsing Grok response:', error);
+      throw new Error(`Invalid JSON response from Grok API: ${responseText}`);
+    }
+
+    console.log('Parsed Grok Response:', data);
     
     if (!data.choices?.[0]?.message?.content) {
-      throw new Error('Invalid response from Grok');
+      throw new Error('Invalid response structure from Grok');
     }
 
     let analysis;
@@ -116,9 +131,9 @@ Return this exact JSON structure:
       }
 
     } catch (error) {
-      console.error('Error parsing Grok response:', error);
-      console.log('Raw Grok response:', data.choices[0].message.content);
-      throw new Error('Failed to parse Grok analysis');
+      console.error('Error parsing Grok response content:', error);
+      console.log('Raw Grok response content:', data.choices[0].message.content);
+      throw new Error('Failed to parse Grok analysis result');
     }
 
     return new Response(
