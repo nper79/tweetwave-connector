@@ -3,7 +3,7 @@ import { Target } from "lucide-react";
 import { useTwitterTimeline } from "@/hooks/use-twitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePredictionFiltering } from "@/hooks/use-prediction-filtering";
-import { PredictionCard } from "@/components/predictions/PredictionCard";
+import { PredictionList } from "@/components/predictions/PredictionList";
 
 export const LatestPredictions = () => {
   const { data: tweets, isLoading, error } = useTwitterTimeline("SolbergInvest");
@@ -62,16 +62,7 @@ export const LatestPredictions = () => {
         <span className="text-sm text-gray-500 dark:text-gray-400">Live Updates</span>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {predictionsFromTweets.map((tweet) => (
-            <PredictionCard key={tweet.tweet_id} tweet={tweet} />
-          ))}
-          {predictionsFromTweets.length === 0 && (
-            <div className="text-center p-4 text-gray-500 dark:text-gray-400">
-              No predictions found
-            </div>
-          )}
-        </div>
+        <PredictionList predictions={predictionsFromTweets} />
       </CardContent>
     </Card>
   );
