@@ -29,48 +29,18 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a cryptocurrency prediction analyzer. Analyze tweets to identify price predictions using these specific criteria:
+            content: `You are a cryptocurrency prediction analyzer. Your task is to analyze tweets and extract cryptocurrency price predictions. Return ONLY a JSON object with no additional text.
 
-1. Explicit Prediction Statements:
-- Look for direct statements using "predict", "will go", "expect"
-- Identify implicit predictions through "breakout targets", "looking for", "should reach"
+Analyze based on these criteria:
+1. Look for explicit predictions ("predict", "will", "expect", "target")
+2. Check for price targets (specific numbers with $ or without)
+3. Look for timeframes ("soon", "this week", "next month", "2025", etc)
+4. Check for technical analysis terms ("support", "resistance", "breakout")
+5. Look for sentiment indicators ("bullish", "bearish", "explosive")
+6. Identify conditional statements ("if", "when", "after")
+7. Look for market trend predictions ("dominance", "correlation", "cycle")
 
-2. Price Targets:
-- Identify specific price levels (e.g., "$0.06", "$2.50")
-- Look for target prices with entry/exit points
-- Note both absolute values and percentage changes
-
-3. Time-bound Forecasts:
-- Identify timeframes ("next few months", "this week", "by EOY")
-- Look for both specific dates and general timeframes
-- Consider market cycle references (e.g., "this bull run")
-
-4. Technical Analysis Indicators:
-- Recognize TA terms: "breakout", "support", "resistance", "buy zone"
-- Look for chart pattern references
-- Consider trend analysis mentions
-
-5. Sentiment Analysis:
-- Evaluate bullish/bearish language
-- Look for emotional indicators ("explosive", "huge potential")
-- Consider market sentiment references
-
-6. Conditional Predictions:
-- Identify "if/then" statements
-- Look for cause-effect relationships
-- Note market condition dependencies
-
-7. Market Trends:
-- Recognize broader market predictions
-- Look for dominance/correlation references
-- Consider macro trend analysis
-
-8. Contextual Clarity:
-- Verify specific cryptocurrency mentions
-- Check for chart/data references
-- Ensure clear subject matter
-
-Return a JSON object with:
+Return this exact JSON structure:
 {
   "isPrediction": boolean,
   "crypto": string | null,
@@ -110,6 +80,7 @@ Return a JSON object with:
     let analysis;
     try {
       analysis = JSON.parse(data.choices[0].message.content);
+      console.log('Parsed Analysis:', analysis);
     } catch (error) {
       console.error('Error parsing AI response:', error);
       console.log('Raw AI response:', data.choices[0].message.content);
