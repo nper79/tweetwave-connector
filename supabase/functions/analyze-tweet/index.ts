@@ -17,38 +17,27 @@ serve(async (req) => {
     const { tweet } = await req.json();
     console.log('Analyzing tweet:', tweet.text);
 
-    // Check if tweet has media
-    const hasImage = tweet.media?.photo && tweet.media.photo[0]?.media_url_https;
-    console.log('Has image:', hasImage);
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a cryptocurrency prediction analyzer. Your task is to analyze tweets and extract cryptocurrency price predictions. Return ONLY a JSON object with no additional text.
 
-    const messages = [
-      {
-        role: 'system',
-        content: `You are a cryptocurrency prediction analyzer specialized in technical analysis. Your task is to analyze tweets and their associated charts to identify price predictions. Return ONLY a JSON object.
-
-Key analysis points:
-1. Technical Analysis Indicators:
-- Look for chart patterns (triangles, wedges, support/resistance)
-- Trend lines and price action
-- Technical indicators mentioned
-- Buy/Sell zones marked
-
-2. Price Movement Predictions:
-- Directional indicators (arrows, trend lines showing future movement)
-- Support/Resistance levels
-- Target prices or zones
-- Entry/Exit points
-
-3. Explicit/Implicit Predictions:
-- Direct statements about price movements
-- Technical analysis terms implying future movement
-- Breakout/Breakdown predictions
-- Target levels or zones
-
-4. Time Horizons:
-- Short-term vs long-term analysis
-- Specific timeframes mentioned
-- Chart timeframe shown
+Analyze based on these criteria:
+1. Look for explicit predictions ("predict", "will", "expect", "target", "might", "could")
+2. Check for price targets (specific numbers with $ or without, or multipliers like "2X", "10X")
+3. Look for timeframes ("soon", "this week", "next month", "2024", "2025", etc)
+4. Check for technical analysis terms ("support", "resistance", "breakout")
+5. Look for sentiment indicators ("bullish", "bearish", "explosive", "🚀")
+6. Identify conditional statements ("if", "when", "after")
+7. Look for market trend predictions ("dominance", "correlation", "cycle")
 
 Return this exact JSON structure:
 {
@@ -69,34 +58,12 @@ Return this exact JSON structure:
   },
   "reasoning": string
 }`
-      },
-      {
-        role: 'user',
-        content: hasImage 
-          ? [
-              { 
-                type: "text", 
-                text: `Analyze this crypto tweet and its chart: ${tweet.text}`
-              },
-              {
-                type: "image_url",
-                image_url: tweet.media.photo[0].media_url_https
-              }
-            ]
-          : tweet.text
-      }
-    ];
-
-    console.log('Sending request to OpenAI...');
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages,
+          },
+          {
+            role: 'user',
+            content: tweet.text
+          }
+        ],
         temperature: 0.1,
         max_tokens: 1000,
       }),
@@ -114,17 +81,17 @@ Return this exact JSON structure:
       analysis = JSON.parse(data.choices[0].message.content);
       console.log('Parsed Analysis:', analysis);
 
-      // Enhance analysis based on technical indicators
-      if (hasImage) {
-        analysis.analysis.hasTechnicalAnalysis = true;
+      // Enhance prediction detection for common patterns
+      if (
+        (tweet.text.includes('🚀') && /\d+[xX]/.test(tweet.text)) || // Rocket emoji with multiplier
+        /\$?\d+(?:,\d{3})*(?:\.\d+)?[kK]?\s*(?:target|prediction)/i.test(tweet.text) || // Price targets
+        /(will|gonna|going to)\s+(?:moon|pump|explode)/i.test(tweet.text) // Common prediction phrases
+      ) {
+        analysis.isPrediction = true;
         analysis.confidence = Math.max(analysis.confidence, 0.7);
-        
-        // If we see directional arrows or trend lines in a chart, it's likely a prediction
-        if (!analysis.isPrediction) {
-          analysis.isPrediction = true;
-          analysis.reasoning += " Chart shows technical analysis with directional indicators.";
-        }
+        analysis.analysis.hasExplicitStatement = true;
       }
+
     } catch (error) {
       console.error('Error parsing AI response:', error);
       console.log('Raw AI response:', data.choices[0].message.content);
