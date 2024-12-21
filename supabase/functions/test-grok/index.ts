@@ -22,6 +22,7 @@ serve(async (req) => {
       throw new Error("GROK_API_KEY is not set");
     }
 
+    console.log("Making request to Grok API...");
     const response = await fetch(GROK_API_URL, {
       method: 'POST',
       headers: {
@@ -29,17 +30,12 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: "x-ai/grok-vision-beta",
+        model: "grok-2-1212",
         messages: [{
           role: "user",
-          content: [
-            {
-              type: "text",
-              text: "Hello! This is a test message. Please respond if you can read this."
-            }
-          ]
+          content: "Say hello!"
         }],
-        temperature: 0.01,
+        temperature: 0.7,
       }),
     });
 
