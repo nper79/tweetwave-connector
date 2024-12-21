@@ -7,11 +7,14 @@ const getCurrentPrice = async (crypto: string): Promise<number> => {
   return 50000; // Mock price for testing
 };
 
-const parsePredictionFromTweet = (tweet: Tweet) => {
+const parsePredictionFromTweet = async (tweet: Tweet) => {
   if (!tweet.text) return null;
   
-  const crypto = extractCryptoSymbol(tweet.text);
-  const targetPrice = extractTargetPrice(tweet.text);
+  const isPrediction = await isPredictionTweet(tweet);
+  if (!isPrediction) return null;
+
+  const crypto = await extractCryptoSymbol(tweet.text, tweet);
+  const targetPrice = await extractTargetPrice(tweet.text, tweet);
   
   if (!crypto || !targetPrice) {
     console.log('Missing crypto or target price for tweet:', tweet.text);
@@ -35,7 +38,7 @@ export const usePredictions = (tweets: Tweet[] = []) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    const prediction = parsePredictionFromTweet(tweet);
+    const prediction = await parsePredictionFromTweet(tweet);
     if (!prediction) return null;
 
     const { data, error } = await supabase
@@ -62,13 +65,13 @@ export const usePredictions = (tweets: Tweet[] = []) => {
     queryKey: ['predictions', tweets.map(t => t.tweet_id)],
     queryFn: async () => {
       console.log("Analyzing tweets for predictions...");
-      const predictionTweets = tweets.filter(tweet => tweet && isPredictionTweet(tweet));
-      console.log(`Found ${predictionTweets.length} prediction tweets:`, predictionTweets);
-      
       const predictions = [];
-      for (const tweet of predictionTweets) {
+      
+      for (const tweet of tweets) {
+        if (!tweet) continue;
+        
         try {
-          const prediction = parsePredictionFromTweet(tweet);
+          const prediction = await parsePredictionFromTweet(tweet);
           if (prediction) {
             await storePredictionMutation.mutateAsync(tweet);
             predictions.push({
@@ -81,6 +84,7 @@ export const usePredictions = (tweets: Tweet[] = []) => {
         }
       }
 
+      console.log(`Found ${predictions.length} prediction tweets`);
       return predictions;
     },
     enabled: tweets.length > 0,
