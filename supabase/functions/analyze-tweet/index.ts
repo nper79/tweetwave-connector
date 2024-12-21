@@ -1,8 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const grokApiKey = Deno.env.get('GROK_API_KEY');
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -15,7 +13,12 @@ serve(async (req) => {
 
   try {
     const { tweet } = await req.json();
-    console.log('Analyzing tweet:', tweet.text);
+    console.log('Analyzing tweet:', tweet);
+
+    const grokApiKey = Deno.env.get('GROK_API_KEY');
+    if (!grokApiKey) {
+      throw new Error('GROK_API_KEY not found in environment variables');
+    }
 
     const response = await fetch('https://api.xai.com/v1/chat/completions', {
       method: 'POST',
@@ -61,7 +64,7 @@ Return this exact JSON structure:
           },
           {
             role: 'user',
-            content: tweet.text
+            content: tweet
           }
         ],
         temperature: 0.1,
@@ -83,9 +86,9 @@ Return this exact JSON structure:
 
       // Enhance prediction detection for common patterns
       if (
-        (tweet.text.includes('🚀') && /\d+[xX]/.test(tweet.text)) || // Rocket emoji with multiplier
-        /\$?\d+(?:,\d{3})*(?:\.\d+)?[kK]?\s*(?:target|prediction)/i.test(tweet.text) || // Price targets
-        /(will|gonna|going to)\s+(?:moon|pump|explode)/i.test(tweet.text) // Common prediction phrases
+        (tweet.includes('🚀') && /\d+[xX]/.test(tweet)) || // Rocket emoji with multiplier
+        /\$?\d+(?:,\d{3})*(?:\.\d+)?[kK]?\s*(?:target|prediction)/i.test(tweet) || // Price targets
+        /(will|gonna|going to)\s+(?:moon|pump|explode)/i.test(tweet) // Common prediction phrases
       ) {
         analysis.isPrediction = true;
         analysis.confidence = Math.max(analysis.confidence, 0.7);
