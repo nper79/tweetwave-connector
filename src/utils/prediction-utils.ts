@@ -48,45 +48,27 @@ export const analyzeTweetWithAI = async (tweet: Tweet): Promise<AIAnalysis | nul
       return null;
     }
 
-    return JSON.parse(data);
+    return data;
   } catch (error) {
     console.error('Error parsing AI analysis:', error);
     return null;
   }
 };
 
-export const isPredictionTweet = async (tweet: Tweet | null): Promise<boolean> => {
+export const isPredictionTweet = (tweet: Tweet | null): boolean => {
   if (!tweet?.text) return false;
   
-  // First do a quick check with basic rules
-  const basicCheck = hasCryptoSymbol(tweet.text) && 
+  // Basic check with rules
+  return hasCryptoSymbol(tweet.text) && 
     (hasPredictionKeyword(tweet.text) || hasTechnicalAnalysis(tweet.text));
-  
-  if (!basicCheck) return false;
-
-  // If basic check passes, use AI analysis
-  const analysis = await analyzeTweetWithAI(tweet);
-  return analysis?.isPrediction && analysis.confidence > 0.7;
 };
 
-export const extractCryptoSymbol = async (tweet: Tweet): Promise<string> => {
-  const analysis = await analyzeTweetWithAI(tweet);
-  if (analysis?.crypto) {
-    return analysis.crypto;
-  }
-  
-  // Fallback to basic extraction
-  const match = tweet.text.match(/\$[A-Z]{2,}/);
+export const extractCryptoSymbol = (text: string): string => {
+  const match = text.match(/\$[A-Z]{2,}/);
   return match ? match[0].replace(/^\$/, '') : 'BTC';
 };
 
-export const extractTargetPrice = async (tweet: Tweet): Promise<number | null> => {
-  const analysis = await analyzeTweetWithAI(tweet);
-  if (analysis?.targetPrice) {
-    return analysis.targetPrice;
-  }
-  
-  // Fallback to basic extraction
+export const extractTargetPrice = (text: string): number | null => {
   const pricePatterns = [
     /target:?\s*\$?(\d+(?:,\d{3})*(?:\.\d+)?)[kK]?/i,
     /price:?\s*\$?(\d+(?:,\d{3})*(?:\.\d+)?)[kK]?/i,
@@ -94,7 +76,7 @@ export const extractTargetPrice = async (tweet: Tweet): Promise<number | null> =
   ];
 
   for (const pattern of pricePatterns) {
-    const match = tweet.text.match(pattern);
+    const match = text.match(pattern);
     if (match) {
       let value = parseFloat(match[1].replace(/,/g, ''));
       if (match[0].toLowerCase().includes('k')) {
