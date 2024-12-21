@@ -1,7 +1,44 @@
-import { Search, Trophy } from "lucide-react";
+import { Search, Trophy, Bot } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
 
 export const LeaderboardHeader = () => {
+  const { toast } = useToast();
+
+  const testGrokApi = async () => {
+    try {
+      toast({
+        title: "Testing Grok API...",
+        description: "Making a test call to the API",
+      });
+
+      const response = await fetch("/functions/v1/test-grok");
+      const data = await response.json();
+
+      if (data.success) {
+        toast({
+          title: "Grok API Test Successful",
+          description: "Check the Edge Function logs for details",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Grok API Test Failed",
+          description: data.error || "Unknown error occurred",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to test Grok API. Check console for details.",
+        variant: "destructive",
+      });
+      console.error("Grok API test error:", error);
+    }
+  };
+
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
       <div className="flex items-center gap-3">
@@ -15,13 +52,24 @@ export const LeaderboardHeader = () => {
           </p>
         </div>
       </div>
-      <div className="relative w-full md:w-64">
-        <Input
-          type="text"
-          placeholder="Search traders..."
-          className="pl-10"
-        />
-        <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+      <div className="flex items-center gap-4">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2"
+          onClick={testGrokApi}
+        >
+          <Bot className="h-4 w-4" />
+          Test Grok
+        </Button>
+        <div className="relative w-full md:w-64">
+          <Input
+            type="text"
+            placeholder="Search traders..."
+            className="pl-10"
+          />
+          <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+        </div>
       </div>
     </div>
   );
