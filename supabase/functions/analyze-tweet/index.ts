@@ -1,7 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const grokApiKey = Deno.env.get('GROK_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,14 +17,14 @@ serve(async (req) => {
     const { tweet } = await req.json();
     console.log('Analyzing tweet:', tweet.text);
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.xai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
+        'Authorization': `Bearer ${grokApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'grok-2-vision-1212',
         messages: [
           {
             role: 'system',
@@ -70,10 +70,10 @@ Return this exact JSON structure:
     });
 
     const data = await response.json();
-    console.log('AI Response:', data);
+    console.log('Grok Response:', data);
     
     if (!data.choices?.[0]?.message?.content) {
-      throw new Error('Invalid response from OpenAI');
+      throw new Error('Invalid response from Grok');
     }
 
     let analysis;
@@ -93,9 +93,9 @@ Return this exact JSON structure:
       }
 
     } catch (error) {
-      console.error('Error parsing AI response:', error);
-      console.log('Raw AI response:', data.choices[0].message.content);
-      throw new Error('Failed to parse AI analysis');
+      console.error('Error parsing Grok response:', error);
+      console.log('Raw Grok response:', data.choices[0].message.content);
+      throw new Error('Failed to parse Grok analysis');
     }
 
     return new Response(
