@@ -22,7 +22,7 @@ serve(async (req) => {
 
     // Test the API key first with a simpler endpoint
     console.log('Testing Grok API connection...');
-    const testResponse = await fetch('https://api.xai.com/v1/models', {
+    const testResponse = await fetch('https://api.grok.ai/v1/models', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${grokApiKey}`,
@@ -40,7 +40,7 @@ serve(async (req) => {
 
     console.log('Grok API connection successful, proceeding with analysis...');
 
-    const response = await fetch('https://api.xai.com/v1/chat/completions', {
+    const response = await fetch('https://api.grok.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${grokApiKey}`,
@@ -48,7 +48,7 @@ serve(async (req) => {
         'Accept': 'application/json',
       },
       body: JSON.stringify({
-        model: 'grok-2-vision-1212',
+        model: 'grok-1',
         messages: [
           {
             role: 'system',
