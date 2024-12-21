@@ -20,6 +20,17 @@ export const LeaderboardHeader = () => {
 
       if (error) {
         console.error("Grok API test error:", error);
+        
+        // Special handling for rate limiting
+        if (error.status === 429) {
+          toast({
+            title: "Rate Limit Exceeded",
+            description: "Too many requests. Please try again later.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
         toast({
           title: "Grok API Test Failed",
           description: error.message || "Unknown error occurred",
